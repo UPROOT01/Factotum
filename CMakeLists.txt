@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(E09 C CXX)
+project(Factotum C CXX)
 
 # Enable C and C++ languages
 enable_language(C)
@@ -33,15 +33,15 @@ if(APPLE)
     file(GLOB_RECURSE HEADERS include/*.h include/*.hpp)
 
     # Define the project executable
-    add_executable(E09 ${SOURCES} ${HEADERS})
+    add_executable(Factotum ${SOURCES} ${HEADERS})
 
     # Include directories
-    target_include_directories(E09 PRIVATE ${GLM_INCLUDE_DIRS})
-    target_include_directories(E09 PRIVATE ${CMAKE_SOURCE_DIR}/include)
-    target_include_directories(E09 PUBLIC ${Vulkan_INCLUDE_DIR})
+    target_include_directories(Factotum PRIVATE ${GLM_INCLUDE_DIRS})
+    target_include_directories(Factotum PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    target_include_directories(Factotum PUBLIC ${Vulkan_INCLUDE_DIR})
 
     # Link libraries
-    target_link_libraries(E09 PRIVATE Vulkan::Vulkan glfw Threads::Threads)
+    target_link_libraries(Factotum PRIVATE Vulkan::Vulkan glfw Threads::Threads)
 
     # Shader setup for macOS
     file(GLOB SPIRV_SOURCE_FILES "${CMAKE_SOURCE_DIR}/shaders/*.spv")
@@ -83,7 +83,7 @@ if(APPLE)
     add_custom_target(Shaders DEPENDS ${SPIRV_SOURCE_FILES})
 
     # Ensure that depends on the SPIR-V files
-    add_dependencies(E09 Shaders)
+    add_dependencies(Factotum Shaders)
 
     # Copy resources (textures, models, etc.) to the build directory
     file(COPY ${CMAKE_SOURCE_DIR}/assets/textures DESTINATION ${CMAKE_BINARY_DIR}/assets)

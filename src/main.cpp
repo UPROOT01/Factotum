@@ -1,6 +1,5 @@
 // This has been adapted from the Vulkan tutorial
 #include <cstdlib>
-#include <cstring>
 #include <glm/fwd.hpp>
 #include <iostream>
 #include <sstream>
@@ -62,14 +61,10 @@ struct skyBoxUniformBufferObject {
 	alignas(16) glm::mat4 mvpMat;
 };
 
-
-
-
-// MAIN ! 
-class E09 : public BaseProject {
-	protected:
+class Factotum : public BaseProject {
+protected:
 	// Here you list all the Vulkan objects you need:
-	
+
 	// Descriptor Layouts [what will be passed to the shaders]
 	DescriptorSetLayout DSLlocalChar, DSLlocalSimp, DSLlocalPBR, DSLglobal, DSLskyBox;
 
@@ -84,42 +79,49 @@ class E09 : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	Scene SC;
-	std::vector<VertexDescriptorRef>  VDRs;
+	std::vector<VertexDescriptorRef> VDRs;
 	std::vector<TechniqueRef> PRs;
 
-  Model Mdrill;
-  DescriptorSet DSDrill;
+	Model Mdrill;
+	DescriptorSet DSDrill;
 	//*DBG*/Model MS;
 	//*DBG*/DescriptorSet SSD;
-	
+
 	// to provide textual feedback
 	TextMaker txt;
-	
+
 	// Other application parameters
-	float Ar;	// Aspect ratio
+	float Ar; // Aspect ratio
 
 	glm::mat4 ViewPrj;
 	glm::mat4 World;
-	glm::vec3 Pos = glm::vec3(0,0,5);
+	glm::vec3 Pos = glm::vec3(0, 0, 5);
 	glm::vec3 cameraPos;
-	float Yaw = glm::radians(0.0f);
-	float Pitch = glm::radians(0.0f);
+	float Yaw = 0.0f;
+	float Pitch = 0.0f;
 	float Roll = glm::radians(0.0f);
-	
+
 	glm::vec4 debug1 = glm::vec4(0);
+
+	// Mouse handling
+	double lastX, lastY;
+	bool firstMouse = true;
+
+	//-Timing
+	float lastFrame = 0.0f;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
 		// window size, titile and initial background
 		windowWidth = 800;
 		windowHeight = 600;
-		windowTitle = "E09 - Showing animations";
-    	windowResizable = GLFW_TRUE;
-		
+		windowTitle = "Factotum";
+		windowResizable = GLFW_TRUE;
+
 		// Initial aspect ratio
 		Ar = 4.0f / 3.0f;
 	}
-	
+
 	// What to do when the window changes size
 	void onWindowResize(int w, int h) {
 		std::cout << "Window resized to: " << w << " x " << h << "\n";
@@ -127,14 +129,19 @@ class E09 : public BaseProject {
 		// Update Render Pass
 		RP.width = w;
 		RP.height = h;
-		
+
 		// updates the textual output
 		txt.resizeScreen(w, h);
 	}
-	
+
 	// Here you load and setup all your Vulkan Models and Texutures.
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
+    // Code used to take the mouse callback
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetWindowUserPointer(window, this);
+		glfwSetCursorPosCallback(window, mouse_callback);
+
 		// Descriptor Layouts [what will be passed to the shaders]
 		DSLglobal.init(this, {
 					// this array contains the binding:
@@ -316,8 +323,9 @@ class E09 : public BaseProject {
 
 		// Prepares for showing the FPS count
 		txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
+		txt.print(0.0f, 0.0f, "+",2,"CO",false,false,true,TAL_CENTER,TRH_CENTER,TRV_MIDDLE,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
 	}
-	
+
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// creates the render pass
@@ -369,7 +377,7 @@ class E09 : public BaseProject {
 		txt.localCleanup();
 		
 	}
-	
+
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
 	// with their buffers and textures
@@ -377,7 +385,7 @@ class E09 : public BaseProject {
 		// Simple trick to avoid having always 'T->'
 		// in che code that populates the command buffer!
 //std::cout << "Populating command buffer for " << currentImage << "\n";
-		E09 *T = (E09 *)Params;
+		Factotum *T = (Factotum *)Params;
 		T->populateCommandBuffer(commandBuffer, currentImage);
 	}
 	// This is the real place where the Command Buffer is written
@@ -471,7 +479,7 @@ std::cout << "Showing bone index: " << debug1.z << "\n";
 		
 		// defines the global parameters for the uniform
 		const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(-30.0f), glm::vec3(0.0f,1.0f,0.0f)) * glm::rotate(glm::mat4(1), glm::radians(-45.0f), glm::vec3(1.0f,0.0f,0.0f));
-		const glm::vec3 lightDir = glm::vec3(lightView * glm::vec4(0.0f, -1.0f, 1.0f, 1.0f));
+		const glm::vec3 lightDir = glm::vec3(lightView * glm::vec4(0.0f, -0.5f, 1.0f, 1.0f));
 	
 		GlobalUniformBufferObject gubo{};
 
@@ -540,6 +548,11 @@ std::cout << "Showing bone index: " << debug1.z << "\n";
 	}
 
 	float GameLogic() {
+		//-Timing
+		float currentFrame = glfwGetTime();
+		float deltaT = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
 		const float FOVy = glm::radians(45.0f);
@@ -547,38 +560,37 @@ std::cout << "Showing bone index: " << debug1.z << "\n";
 		const float farPlane = 100.f;
 		// Player starting point
 		const glm::vec3 StartingPosition = glm::vec3(0.0, 0.0, 5);
-		// Camera target height and distance
-		static float camHeight = 1.5;
-		static float camDist = 5;
-		// Camera Pitch limits
-		const float minPitch = glm::radians(-8.75f);
-		const float maxPitch = glm::radians(60.0f);
 		// Rotation and motion speed
-		const float ROT_SPEED = glm::radians(120.0f);
 		const float MOVE_SPEED_BASE = 2.0f;
 		const float MOVE_SPEED_RUN  = 5.0f;
-		const float ZOOM_SPEED = MOVE_SPEED_BASE * 1.5f;
-		const float MAX_CAM_DIST =  7.5;
-		const float MIN_CAM_DIST =  1.5;
 
-		// Integration with the timers and the controllers
-		float deltaT;
-		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
-		bool fire = false;
-		getSixAxis(deltaT, m, r, fire);
-		float MOVE_SPEED = fire ? MOVE_SPEED_RUN : MOVE_SPEED_BASE;
+		// bool fire = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+		float MOVE_SPEED = MOVE_SPEED_RUN;
 
+		glm::vec3 front;
+		front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+		front.y = sin(glm::radians(Pitch));
+		front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+		front = glm::normalize(front);
+
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			Pos += MOVE_SPEED * deltaT * front;
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			Pos -= MOVE_SPEED * deltaT * front;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			Pos -= glm::normalize(glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f))) * MOVE_SPEED * deltaT;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			Pos += glm::normalize(glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f))) * MOVE_SPEED * deltaT;
+
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+			Pos.y += MOVE_SPEED * deltaT;
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+			Pos.y -= MOVE_SPEED * deltaT;
 
 		// Game Logic implementation
 		// Current Player Position - statc variable make sure its value remain unchanged in subsequent calls to the procedure
-		static glm::vec3 Pos = StartingPosition;
 		static glm::vec3 oldPos;
 		static int currRunState = 1;
-
-/*		camDist = camDist - m.y * ZOOM_SPEED * deltaT;
-		camDist = camDist < MIN_CAM_DIST ? MIN_CAM_DIST :
-				 (camDist > MAX_CAM_DIST ? MAX_CAM_DIST : camDist);*/
-		camDist = (MIN_CAM_DIST + MIN_CAM_DIST) / 2.0f; 
 
 		// To be done in the assignment
 		ViewPrj = glm::mat4(1);
@@ -586,8 +598,6 @@ std::cout << "Showing bone index: " << debug1.z << "\n";
 
 		oldPos = Pos;
 
-		static float Yaw = glm::radians(0.0f);
-		static float Pitch = glm::radians(0.0f);
 		static float relDir = glm::radians(0.0f);
 		static float dampedRelDir = glm::radians(0.0f);
 		static glm::vec3 dampedCamPos = StartingPosition;
@@ -596,25 +606,8 @@ std::cout << "Showing bone index: " << debug1.z << "\n";
 		// Position
 		glm::vec3 ux = glm::rotate(glm::mat4(1.0f), Yaw, glm::vec3(0,1,0)) * glm::vec4(1,0,0,1);
 		glm::vec3 uz = glm::rotate(glm::mat4(1.0f), Yaw, glm::vec3(0,1,0)) * glm::vec4(0,0,-1,1);
-		Pos = Pos + MOVE_SPEED * m.x * ux * deltaT;
-		Pos = Pos - MOVE_SPEED * m.z * uz * deltaT;
 		
-		camHeight += MOVE_SPEED * m.y * deltaT;
-		// Rotation
-		Yaw = Yaw - ROT_SPEED * deltaT * r.y;
-		Pitch = Pitch - ROT_SPEED * deltaT * r.x;
-		Pitch  =  Pitch < minPitch ? minPitch :
-				   (Pitch > maxPitch ? maxPitch : Pitch);
-
-
 		float ef = exp(-10.0 * deltaT);
-		// Rotational independence from view with damping
-		if(glm::length(glm::vec3(m.x, 0.0f, m.z)) > 0.001f) {
-			relDir = Yaw + atan2(m.x, m.z);
-			dampedRelDir = dampedRelDir > relDir + 3.1416f ? dampedRelDir - 6.28f :
-						   dampedRelDir < relDir - 3.1416f ? dampedRelDir + 6.28f : dampedRelDir;
-		}
-		dampedRelDir = ef * dampedRelDir + (1.0f - ef) * relDir;
 		
 		// Final world matrix computaiton
 		World = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1.0f), dampedRelDir, glm::vec3(0,1,0));
@@ -624,26 +617,44 @@ std::cout << "Showing bone index: " << debug1.z << "\n";
 		Prj[1][1] *= -1;
 
 		// View
-		// Target
-		glm::vec3 target = Pos + glm::vec3(0.0f, camHeight, 0.0f);
-
-		// Camera position, depending on Yaw parameter, but not character direction
-		glm::mat4 camWorld = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1.0f), Yaw, glm::vec3(0,1,0));
-		cameraPos = camWorld * glm::vec4(0.0f, camHeight + camDist * sin(Pitch), camDist * cos(Pitch), 1.0);
-		// Damping of camera
-		dampedCamPos = ef * dampedCamPos + (1.0f - ef) * cameraPos;
-
-		glm::mat4 View = glm::lookAt(dampedCamPos, target, glm::vec3(0,1,0));
+		cameraPos = Pos;
+		glm::mat4 View = glm::lookAt(cameraPos, cameraPos + front, glm::vec3(0.0f, 1.0f, 0.0f));
 
 		ViewPrj = Prj * View;
 		
 		return deltaT;
 	}
+
+	static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+		Factotum* app = (Factotum*)glfwGetWindowUserPointer(window);
+		if (app->firstMouse) {
+			app->lastX = xpos;
+			app->lastY = ypos;
+			app->firstMouse = false;
+		}
+
+		float xoffset = xpos - app->lastX;
+		float yoffset = app->lastY - ypos;
+		app->lastX = xpos;
+		app->lastY = ypos;
+
+		float sensitivity = 0.05f;
+		xoffset *= sensitivity;
+		yoffset *= sensitivity;
+
+		app->Yaw += xoffset;
+		app->Pitch += yoffset;
+
+		if (app->Pitch > 89.0f)
+			app->Pitch = 89.0f;
+		if (app->Pitch < -89.0f)
+			app->Pitch = -89.0f;
+	}
 };
 
 // This is the main: probably you do not need to touch this!
 int main() {
-    E09 app;
+    Factotum app;
 
     try {
         app.run();
@@ -654,4 +665,3 @@ int main() {
 
     return EXIT_SUCCESS;
 }
-
