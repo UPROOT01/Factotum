@@ -101,6 +101,7 @@ protected:
   float Yaw = 0.0f;
   float Pitch = 0.0f;
   float Roll = glm::radians(0.0f);
+  float gridSize = 2.f;
 
   glm::vec4 debug1 = glm::vec4(0);
 
@@ -713,12 +714,25 @@ protected:
       float t = -app->cameraPos.y / ray_wor.y;
       if (t > 0) {
         glm::vec3 intersection = app->cameraPos + t * ray_wor;
-        app->minerPositions.push_back(
-            glm::vec3(round(intersection.x), 0.0f, round(intersection.z)));
-        app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-        std::cout << "Miner position: " << app->minerPositions.back().x << ","
-                  << app->minerPositions.back().y << ','
-                  << app->minerPositions.back().z << '\n';
+        float x = round(intersection.x / app->gridSize) * app->gridSize;
+        float z = round(intersection.z / app->gridSize) * app->gridSize;
+        glm::vec3 newPos = glm::vec3(x, 0.0f, z);
+
+        bool positionOccupied = false;
+        for (const auto& pos : app->minerPositions) {
+            if (pos == newPos) {
+                positionOccupied = true;
+                break;
+            }
+        }
+
+        if (!positionOccupied) {
+            app->minerPositions.push_back(newPos);
+            app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
+            std::cout << "Miner position: " << app->minerPositions.back().x << ","
+                      << app->minerPositions.back().y << ','
+                      << app->minerPositions.back().z << '\n';
+        }
       }
     }
   }
