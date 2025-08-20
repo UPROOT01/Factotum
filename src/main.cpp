@@ -58,6 +58,16 @@ struct UniformBufferObjectSimp {
   alignas(16) glm::mat4 nMat[100];
 };
 
+struct ComponentModel {
+  Model model;
+  DescriptorSet previewDescriptorSet;
+  DescriptorSet standardDescriptorSet;
+};
+
+struct Structure {
+  std::vector<ComponentModel> components;
+};
+
 struct skyBoxUniformBufferObject {
   alignas(16) glm::mat4 mvpMat;
 };
@@ -84,11 +94,9 @@ protected:
   std::vector<VertexDescriptorRef> VDRs;
   std::vector<TechniqueRef> PRs;
 
-  Model Mdrill;
-  DescriptorSet DSDrill;
-  DescriptorSet DSDrillPreview;
+  Structure minerStructure;
   bool isPlacingDrill = false;
-  glm::mat4 drillPreviewTransform;
+  glm::mat4 previewTransform;
   //*DBG*/Model MS;
   //*DBG*/DescriptorSet SSD;
 
@@ -278,13 +286,18 @@ protected:
                     "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
     Pwireframe.setPolygonMode(VK_POLYGON_MODE_LINE);
 
-    AssetFile ass;
-    ass.init("assets/models/Miner.gltf", GLTF);
-    Mdrill.initFromAsset(this, &VDtan, &ass, "Cube.004", 0, "Cube.001");
+    minerStructure.components.resize(4);
 
-    // Initialize DSDrillPreview (assuming it uses DSLlocalPBR)
-    // This will be properly initialized in pipelinesAndDescriptorSetsInit()
-    // For now, just declare it.
+    AssetFile assetMiner;
+    assetMiner.init("assets/models/Miner.gltf", GLTF);
+    minerStructure.components[0].model.initFromAsset(this, &VDtan, &assetMiner,
+                                                     "Cube", 0, "Cube");
+    minerStructure.components[1].model.initFromAsset(this, &VDtan, &assetMiner,
+                                                     "Cone", 0, "Cone");
+    minerStructure.components[2].model.initFromAsset(this, &VDtan, &assetMiner,
+                                                     "Cylinder", 0, "Cylinder");
+    minerStructure.components[3].model.initFromAsset(this, &VDtan, &assetMiner,
+                                                     "Pyramid", 0, "Pyramid");
 
     PRs.resize(4);
     PRs[0].init("CookTorranceChar",
@@ -336,7 +349,7 @@ protected:
     // sets the size of the Descriptor Set Pool
     DPSZs.uniformBlocksInPool = 3;
     DPSZs.texturesInPool = 4;
-    DPSZs.setsInPool = 3;
+    DPSZs.setsInPool = 7;
 
     std::cout << "\nLoading the scene\n\n";
     if (SC.init(this, /*Npasses*/ 1, VDRs, PRs, "assets/models/scene.json") !=
@@ -373,14 +386,17 @@ protected:
     P_PBR.create(&RP);
     Pwireframe.create(&RP);
 
-    DSDrill.init(this, &DSLlocalPBR,
-                 {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
-                  SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+    for (auto &component : minerStructure.components) {
+      component.previewDescriptorSet.init(
+          this, &DSLlocalPBR,
+          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
+           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
 
-    DSDrillPreview.init(
-        this, &DSLlocalPBR,
-        {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
-         SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+      component.standardDescriptorSet.init(
+          this, &DSLlocalPBR,
+          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
+           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+    }
 
     SC.pipelinesAndDescriptorSetsInit();
     txt.pipelinesAndDescriptorSetsInit();
@@ -394,8 +410,12 @@ protected:
     P_PBR.cleanup();
     Pwireframe.cleanup();
     RP.cleanup();
-    DSDrill.cleanup();
-    DSDrillPreview.cleanup();
+
+    // Cleanup descriptor sets for each component in minerStructurePreview
+    for (auto &component : minerStructure.components) {
+      component.previewDescriptorSet.cleanup();
+      component.standardDescriptorSet.cleanup();
+    }
 
     SC.pipelinesAndDescriptorSetsCleanup();
     txt.pipelinesAndDescriptorSetsCleanup();
@@ -415,7 +435,9 @@ protected:
     PskyBox.destroy();
     P_PBR.destroy();
     Pwireframe.destroy();
-    Mdrill.cleanup();
+    for (auto &component : minerStructure.components) {
+      component.model.cleanup();
+    }
 
     RP.destroy();
 
@@ -441,20 +463,26 @@ protected:
     RP.begin(commandBuffer, currentImage);
 
     SC.populateCommandBuffer(commandBuffer, 0, currentImage);
-    Mdrill.bind(commandBuffer);
-    DSDrill.bind(commandBuffer, P_PBR, 1, currentImage);
-    vkCmdDrawIndexed(commandBuffer,
-                     static_cast<uint32_t>(Mdrill.indices.size()),
-                     minerPositions.size(), 0, 0, 0);
+    for (auto &component : minerStructure.components) {
 
-    // Draw the wireframe drill if in placement mode
-    if (isPlacingDrill) {
-      Pwireframe.bind(commandBuffer);
-      DSDrillPreview.bind(commandBuffer, Pwireframe, 1, currentImage);
-      Mdrill.bind(commandBuffer);
+      component.model.bind(commandBuffer);
+      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1,
+                                           currentImage);
       vkCmdDrawIndexed(commandBuffer,
-                       static_cast<uint32_t>(Mdrill.indices.size()), 1, 0, 0,
-                       0);
+                       static_cast<uint32_t>(component.model.indices.size()),
+                       minerPositions.size(), 0, 0, 0);
+    }
+
+    if (isPlacingDrill) {
+      for (auto &component : minerStructure.components) {
+        Pwireframe.bind(commandBuffer);
+        component.model.bind(commandBuffer);
+        component.previewDescriptorSet.bind(commandBuffer, Pwireframe, 1,
+                                            currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(component.model.indices.size()),
+                         1, 0, 0, 0);
+      }
     }
 
     RP.end(commandBuffer);
@@ -538,6 +566,7 @@ protected:
         submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
         std::cout << "Wireframe placement mode: "
                   << (isPlacingDrill ? "ON" : "OFF") << std::endl;
+        return;
       }
     } else {
       if ((curDebounce == GLFW_KEY_T) && debounce) {
@@ -548,20 +577,6 @@ protected:
 
     // moves the view
     float deltaT = GameLogic();
-
-    if (isPlacingDrill) {
-      drillPreviewTransform = glm::translate(
-          glm::mat4(1.0f), calculateGroundPlacementPosition(
-                               cameraPos, getLookingVector(), gridSize));
-
-      // Update the uniform buffer for the wireframe model
-      UniformBufferObjectSimp ubosWireframe{};
-      ubosWireframe.mMat[0] = drillPreviewTransform;
-      ubosWireframe.mvpMat[0] = ViewPrj * drillPreviewTransform;
-      ubosWireframe.nMat[0] =
-          glm::inverse(glm::transpose(ubosWireframe.mMat[0]));
-      DSDrillPreview.map(currentImage, &ubosWireframe, 0);
-    }
 
     // defines the global parameters for the uniform
     const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(-30.0f),
@@ -588,8 +603,6 @@ protected:
                                      glm::vec3(1.0f, 0.0f, 0.0f));
 
     int instanceId;
-    // character
-
     UniformBufferObjectSimp ubos{};
 
     // skybox pipeline
@@ -609,15 +622,32 @@ protected:
       SC.TI[3].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
     }
 
-    for (int i = 0; i < minerPositions.size(); i++) {
-      ubos.mMat[i] =
-          glm::translate(glm::mat4(1.f), minerPositions[i]) * Mdrill.Wm;
-      ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
-      ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
+    for (auto &component : minerStructure.components) {
+      for (int i = 0; i < minerPositions.size(); i++) {
+        ubos.mMat[i] = glm::translate(glm::mat4(1.f), minerPositions[i]) *
+                       component.model.Wm;
+        ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
+        ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
+      }
+
+      component.standardDescriptorSet.map(currentImage, &ubos, 0);
     }
 
-    DSDrill.map(currentImage, &ubos, 0);
+    if (isPlacingDrill) {
+      UniformBufferObjectSimp ubosComponent{};
+      previewTransform = glm::translate(
+          glm::mat4(1.0f), calculateGroundPlacementPosition(
+                               cameraPos, getLookingVector(), gridSize));
 
+      for (auto &component : minerStructure.components) {
+        ubosComponent.mMat[0] = previewTransform * component.model.Wm;
+        ubosComponent.mvpMat[0] = ViewPrj * ubosComponent.mMat[0];
+        ubosComponent.nMat[0] =
+            glm::inverse(glm::transpose(ubosComponent.mMat[0]));
+
+        component.previewDescriptorSet.map(currentImage, &ubosComponent, 0);
+      }
+    }
     // updates the FPS
     static float elapsedT = 0.0f;
     static int countedFrames = 0;

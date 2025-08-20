@@ -5,8 +5,7 @@
 	],
 	"models": [
 		{"id": "skybox", "VD": "VDskybox", "model": "assets/models/SkyBoxCube.obj", "format":"OBJ"},
-		{"id": "ground",  "VD": "VDtan",  "model": "Ground", "node": "Ground", "meshId": 0, "asset": "ct", "format":"ASSET"},
-    {"id": "ut0",  "VD": "VDtan",  "model": "Cube.004", "node": "Cube.001", "meshId": 0, "asset": "ut", "format":"ASSET"}
+		{"id": "ground",  "VD": "VDtan",  "model": "Ground", "node": "Ground", "meshId": 0, "asset": "ct", "format":"ASSET"}
 	],
 	"textures": [
 		{"id": "dcolor",    "texture": "assets/textures/drill/Metal028_4K-JPG_Color.jpg",	   "format": "D"},
