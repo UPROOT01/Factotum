@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include <json.hpp>
+#include <vulkan/vulkan_core.h>
 
 #include "modules/Starter.hpp"
 #include "modules/TextMaker.hpp"
@@ -75,7 +76,7 @@ protected:
   VertexDescriptor VDskyBox;
   VertexDescriptor VDtan;
   RenderPass RP;
-  Pipeline Pchar, PsimpObj, PskyBox, P_PBR;
+  Pipeline Pchar, PsimpObj, PskyBox, P_PBR, Pwireframe;
   //*DBG*/Pipeline PDebug;
 
   // Models, textures and Descriptors (values assigned to the uniforms)
@@ -85,6 +86,9 @@ protected:
 
   Model Mdrill;
   DescriptorSet DSDrill;
+  DescriptorSet DSDrillPreview;
+  bool isPlacingDrill = false;
+  glm::mat4 drillPreviewTransform;
   //*DBG*/Model MS;
   //*DBG*/DescriptorSet SSD;
 
@@ -269,9 +273,18 @@ protected:
     P_PBR.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
                "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
 
+    // Initialize the wireframe pipeline
+    Pwireframe.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
+                    "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
+    Pwireframe.setPolygonMode(VK_POLYGON_MODE_LINE);
+
     AssetFile ass;
     ass.init("assets/models/Miner.gltf", GLTF);
     Mdrill.initFromAsset(this, &VDtan, &ass, "Cube.004", 0, "Cube.001");
+
+    // Initialize DSDrillPreview (assuming it uses DSLlocalPBR)
+    // This will be properly initialized in pipelinesAndDescriptorSetsInit()
+    // For now, just declare it.
 
     PRs.resize(4);
     PRs[0].init("CookTorranceChar",
@@ -358,10 +371,16 @@ protected:
     PsimpObj.create(&RP);
     PskyBox.create(&RP);
     P_PBR.create(&RP);
+    Pwireframe.create(&RP);
 
     DSDrill.init(this, &DSLlocalPBR,
                  {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
                   SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+
+    DSDrillPreview.init(
+        this, &DSLlocalPBR,
+        {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
+         SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
 
     SC.pipelinesAndDescriptorSetsInit();
     txt.pipelinesAndDescriptorSetsInit();
@@ -373,8 +392,10 @@ protected:
     PsimpObj.cleanup();
     PskyBox.cleanup();
     P_PBR.cleanup();
+    Pwireframe.cleanup();
     RP.cleanup();
     DSDrill.cleanup();
+    DSDrillPreview.cleanup();
 
     SC.pipelinesAndDescriptorSetsCleanup();
     txt.pipelinesAndDescriptorSetsCleanup();
@@ -393,6 +414,7 @@ protected:
     PsimpObj.destroy();
     PskyBox.destroy();
     P_PBR.destroy();
+    Pwireframe.destroy();
     Mdrill.cleanup();
 
     RP.destroy();
@@ -424,6 +446,16 @@ protected:
     vkCmdDrawIndexed(commandBuffer,
                      static_cast<uint32_t>(Mdrill.indices.size()),
                      minerPositions.size(), 0, 0, 0);
+
+    // Draw the wireframe drill if in placement mode
+    if (isPlacingDrill) {
+      Pwireframe.bind(commandBuffer);
+      DSDrillPreview.bind(commandBuffer, Pwireframe, 1, currentImage);
+      Mdrill.bind(commandBuffer);
+      vkCmdDrawIndexed(commandBuffer,
+                       static_cast<uint32_t>(Mdrill.indices.size()), 1, 0, 0,
+                       0);
+    }
 
     RP.end(commandBuffer);
   }
@@ -498,8 +530,38 @@ protected:
       }
     }
 
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+      if (!debounce) {
+        debounce = true;
+        curDebounce = GLFW_KEY_T;
+        isPlacingDrill = !isPlacingDrill;
+        submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+        std::cout << "Wireframe placement mode: "
+                  << (isPlacingDrill ? "ON" : "OFF") << std::endl;
+      }
+    } else {
+      if ((curDebounce == GLFW_KEY_T) && debounce) {
+        debounce = false;
+        curDebounce = 0;
+      }
+    }
+
     // moves the view
     float deltaT = GameLogic();
+
+    if (isPlacingDrill) {
+      drillPreviewTransform = glm::translate(
+          glm::mat4(1.0f), calculateGroundPlacementPosition(
+                               cameraPos, getLookingVector(), gridSize));
+
+      // Update the uniform buffer for the wireframe model
+      UniformBufferObjectSimp ubosWireframe{};
+      ubosWireframe.mMat[0] = drillPreviewTransform;
+      ubosWireframe.mvpMat[0] = ViewPrj * drillPreviewTransform;
+      ubosWireframe.nMat[0] =
+          glm::inverse(glm::transpose(ubosWireframe.mMat[0]));
+      DSDrillPreview.map(currentImage, &ubosWireframe, 0);
+    }
 
     // defines the global parameters for the uniform
     const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(-30.0f),
@@ -587,6 +649,20 @@ protected:
     front = glm::normalize(front);
 
     return front;
+  }
+
+  glm::vec3 calculateGroundPlacementPosition(glm::vec3 cameraPos,
+                                             glm::vec3 lookingVector,
+                                             float gridSize) {
+    float t = -cameraPos.y / lookingVector.y;
+    if (t > 0) {
+      glm::vec3 intersection = cameraPos + t * lookingVector;
+      float x = round(intersection.x / gridSize) * gridSize;
+      float z = round(intersection.z / gridSize) * gridSize;
+      return glm::vec3(x, 0.0f, z);
+    }
+    return glm::vec3(
+        0.0f); // Return a default position if no valid intersection
   }
 
   float GameLogic() {
@@ -710,29 +786,23 @@ protected:
                                     int mods) {
     Factotum *app = (Factotum *)glfwGetWindowUserPointer(window);
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-      glm::vec3 ray_wor = app->getLookingVector();
-      float t = -app->cameraPos.y / ray_wor.y;
-      if (t > 0) {
-        glm::vec3 intersection = app->cameraPos + t * ray_wor;
-        float x = round(intersection.x / app->gridSize) * app->gridSize;
-        float z = round(intersection.z / app->gridSize) * app->gridSize;
-        glm::vec3 newPos = glm::vec3(x, 0.0f, z);
+      glm::vec3 newPos = app->calculateGroundPlacementPosition(
+          app->cameraPos, app->getLookingVector(), app->gridSize);
 
-        bool positionOccupied = false;
-        for (const auto& pos : app->minerPositions) {
-            if (pos == newPos) {
-                positionOccupied = true;
-                break;
-            }
+      bool positionOccupied = false;
+      for (const auto &pos : app->minerPositions) {
+        if (pos == newPos) {
+          positionOccupied = true;
+          break;
         }
+      }
 
-        if (!positionOccupied) {
-            app->minerPositions.push_back(newPos);
-            app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-            std::cout << "Miner position: " << app->minerPositions.back().x << ","
-                      << app->minerPositions.back().y << ','
-                      << app->minerPositions.back().z << '\n';
-        }
+      if (!positionOccupied) {
+        app->minerPositions.push_back(newPos);
+        app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
+        std::cout << "Miner position: " << app->minerPositions.back().x << ","
+                  << app->minerPositions.back().y << ','
+                  << app->minerPositions.back().z << '\n';
       }
     }
   }
