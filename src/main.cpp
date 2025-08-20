@@ -97,6 +97,7 @@ protected:
   Structure minerStructure;
   bool isPlacingDrill = false;
   glm::mat4 previewTransform;
+  float previewRotation = 0.0f;
   //*DBG*/Model MS;
   //*DBG*/DescriptorSet SSD;
 
@@ -124,7 +125,11 @@ protected:
   //-Timing
   float lastFrame = 0.0f;
 
-  std::vector<glm::vec3> minerPositions;
+  struct PlacedMiner {
+    glm::vec3 position;
+    float rotation;
+  };
+  std::vector<PlacedMiner> placedMiners;
 
   // Here you set the main application parameters
   void setWindowParameters() {
@@ -470,7 +475,7 @@ protected:
                                            currentImage);
       vkCmdDrawIndexed(commandBuffer,
                        static_cast<uint32_t>(component.model.indices.size()),
-                       minerPositions.size(), 0, 0, 0);
+                       placedMiners.size(), 0, 0, 0);
     }
 
     if (isPlacingDrill) {
@@ -575,6 +580,23 @@ protected:
       }
     }
 
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+      if (!debounce) {
+        debounce = true;
+        curDebounce = GLFW_KEY_R;
+        previewRotation += glm::radians(90.0f);
+        if (previewRotation >= glm::radians(360.0f)) {
+            previewRotation -= glm::radians(360.0f);
+        }
+        std::cout << "Preview rotation: " << glm::degrees(previewRotation) << " degrees" << std::endl;
+      }
+    } else {
+      if ((curDebounce == GLFW_KEY_R) && debounce) {
+        debounce = false;
+        curDebounce = 0;
+      }
+    }
+
     // moves the view
     float deltaT = GameLogic();
 
@@ -623,8 +645,9 @@ protected:
     }
 
     for (auto &component : minerStructure.components) {
-      for (int i = 0; i < minerPositions.size(); i++) {
-        ubos.mMat[i] = glm::translate(glm::mat4(1.f), minerPositions[i]) *
+      for (int i = 0; i < placedMiners.size(); i++) {
+        ubos.mMat[i] = glm::translate(glm::mat4(1.f), placedMiners[i].position) *
+                       glm::rotate(glm::mat4(1.0f), placedMiners[i].rotation, glm::vec3(0.0f, 1.0f, 0.0f)) *
                        component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
         ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
@@ -637,7 +660,8 @@ protected:
       UniformBufferObjectSimp ubosComponent{};
       previewTransform = glm::translate(
           glm::mat4(1.0f), calculateGroundPlacementPosition(
-                               cameraPos, getLookingVector(), gridSize));
+                               cameraPos, getLookingVector(), gridSize)) *
+                         glm::rotate(glm::mat4(1.0f), previewRotation, glm::vec3(0.0f, 1.0f, 0.0f));
 
       for (auto &component : minerStructure.components) {
         ubosComponent.mMat[0] = previewTransform * component.model.Wm;
@@ -820,19 +844,22 @@ protected:
           app->cameraPos, app->getLookingVector(), app->gridSize);
 
       bool positionOccupied = false;
-      for (const auto &pos : app->minerPositions) {
-        if (pos == newPos) {
+      for (const auto &pos : app->placedMiners) {
+        if (pos.position == newPos) {
           positionOccupied = true;
           break;
         }
       }
 
       if (!positionOccupied) {
-        app->minerPositions.push_back(newPos);
+        PlacedMiner newPlacedMiner;
+        newPlacedMiner.position = newPos;
+        newPlacedMiner.rotation = app->previewRotation;
+        app->placedMiners.push_back(newPlacedMiner);
         app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-        std::cout << "Miner position: " << app->minerPositions.back().x << ","
-                  << app->minerPositions.back().y << ','
-                  << app->minerPositions.back().z << '\n';
+        std::cout << "Miner position: " << app->placedMiners.back().position.x << ","
+                  << app->placedMiners.back().position.y << ","
+                  << app->placedMiners.back().position.z << ", rotation: " << glm::degrees(app->placedMiners.back().rotation) << " degrees\n";
       }
     }
   }
