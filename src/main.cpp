@@ -72,21 +72,28 @@ struct skyBoxUniformBufferObject {
   alignas(16) glm::mat4 mvpMat;
 };
 
+struct GridUniformBufferObject {
+  alignas(16) glm::mat4 gVP;
+  alignas(16) glm::vec3 camWorldPos;
+  alignas(4) float gridSize;
+};
+
 class Factotum : public BaseProject {
 protected:
   // Here you list all the Vulkan objects you need:
 
   // Descriptor Layouts [what will be passed to the shaders]
   DescriptorSetLayout DSLlocalChar, DSLlocalSimp, DSLlocalPBR, DSLglobal,
-      DSLskyBox;
+      DSLskyBox, DSLgrid;
 
   // Vertex formants, Pipelines [Shader couples] and Render passes
   VertexDescriptor VDchar;
   VertexDescriptor VDsimp;
   VertexDescriptor VDskyBox;
   VertexDescriptor VDtan;
+  VertexDescriptor VDgrid;
   RenderPass RP;
-  Pipeline Pchar, PsimpObj, PskyBox, P_PBR, Pwireframe;
+  Pipeline Pchar, PsimpObj, PskyBox, P_PBR, Pwireframe, Pgrid;
   //*DBG*/Pipeline PDebug;
 
   // Models, textures and Descriptors (values assigned to the uniforms)
@@ -98,8 +105,7 @@ protected:
   bool isPlacingDrill = false;
   glm::mat4 previewTransform;
   float previewRotation = 0.0f;
-  //*DBG*/Model MS;
-  //*DBG*/DescriptorSet SSD;
+  DescriptorSet DSgrid;
 
   // to provide textual feedback
   TextMaker txt;
@@ -219,6 +225,10 @@ protected:
                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}});
 
+    DSLgrid.init(this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                         VK_SHADER_STAGE_ALL_GRAPHICS,
+                         sizeof(GridUniformBufferObject), 1}});
+
     VDchar.init(
         this, {{0, sizeof(VertexChar), VK_VERTEX_INPUT_RATE_VERTEX}},
         {{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexChar, pos),
@@ -255,11 +265,16 @@ protected:
                 {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexTan, tan),
                  sizeof(glm::vec4), TANGENT}});
 
-    VDRs.resize(4);
+    // Grid vertex descriptor - no vertex attributes since positions are
+    // hardcoded in shader
+    VDgrid.init(this, {}, {});
+
+    VDRs.resize(5);
     VDRs[0].init("VDchar", &VDchar);
     VDRs[1].init("VDsimp", &VDsimp);
     VDRs[2].init("VDskybox", &VDskyBox);
     VDRs[3].init("VDtan", &VDtan);
+    VDRs[4].init("VDgrid", &VDgrid);
 
     // initializes the render passes
     RP.init(this);
@@ -286,11 +301,16 @@ protected:
     P_PBR.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
                "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
 
-    // Initialize the wireframe pipeline
     Pwireframe.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-                    "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
+                    "shaders/OnlyCyan.frag.spv", {&DSLglobal, &DSLlocalPBR});
     Pwireframe.setPolygonMode(VK_POLYGON_MODE_LINE);
+    // I want to be able to see the wireframe even from behind
+    Pwireframe.setCullMode(VK_CULL_MODE_NONE);
 
+    Pgrid.init(this, &VDgrid, "shaders/Grid.vert.spv", "shaders/Grid.frag.spv",
+               {&DSLgrid});
+
+    Pgrid.setTransparency(true);
     minerStructure.components.resize(4);
 
     AssetFile assetMiner;
@@ -354,7 +374,7 @@ protected:
     // sets the size of the Descriptor Set Pool
     DPSZs.uniformBlocksInPool = 3;
     DPSZs.texturesInPool = 4;
-    DPSZs.setsInPool = 7;
+    DPSZs.setsInPool = 8;
 
     std::cout << "\nLoading the scene\n\n";
     if (SC.init(this, /*Npasses*/ 1, VDRs, PRs, "assets/models/scene.json") !=
@@ -390,6 +410,7 @@ protected:
     PskyBox.create(&RP);
     P_PBR.create(&RP);
     Pwireframe.create(&RP);
+    Pgrid.create(&RP);
 
     for (auto &component : minerStructure.components) {
       component.previewDescriptorSet.init(
@@ -403,6 +424,7 @@ protected:
            SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
     }
 
+    DSgrid.init(this, &DSLgrid, {});
     SC.pipelinesAndDescriptorSetsInit();
     txt.pipelinesAndDescriptorSetsInit();
   }
@@ -414,6 +436,7 @@ protected:
     PskyBox.cleanup();
     P_PBR.cleanup();
     Pwireframe.cleanup();
+    Pgrid.cleanup();
     RP.cleanup();
 
     // Cleanup descriptor sets for each component in minerStructurePreview
@@ -421,6 +444,8 @@ protected:
       component.previewDescriptorSet.cleanup();
       component.standardDescriptorSet.cleanup();
     }
+
+    DSgrid.cleanup();
 
     SC.pipelinesAndDescriptorSetsCleanup();
     txt.pipelinesAndDescriptorSetsCleanup();
@@ -434,12 +459,14 @@ protected:
     DSLlocalPBR.cleanup();
     DSLskyBox.cleanup();
     DSLglobal.cleanup();
+    DSLgrid.cleanup();
 
     Pchar.destroy();
     PsimpObj.destroy();
     PskyBox.destroy();
     P_PBR.destroy();
     Pwireframe.destroy();
+    Pgrid.destroy();
     for (auto &component : minerStructure.components) {
       component.model.cleanup();
     }
@@ -488,6 +515,11 @@ protected:
                          static_cast<uint32_t>(component.model.indices.size()),
                          1, 0, 0, 0);
       }
+
+      // Render grid preview
+      Pgrid.bind(commandBuffer);
+      DSgrid.bind(commandBuffer, Pgrid, 0, currentImage);
+      vkCmdDraw(commandBuffer, 6, 1, 0, 0);
     }
 
     RP.end(commandBuffer);
@@ -586,9 +618,10 @@ protected:
         curDebounce = GLFW_KEY_R;
         previewRotation += glm::radians(90.0f);
         if (previewRotation >= glm::radians(360.0f)) {
-            previewRotation -= glm::radians(360.0f);
+          previewRotation -= glm::radians(360.0f);
         }
-        std::cout << "Preview rotation: " << glm::degrees(previewRotation) << " degrees" << std::endl;
+        std::cout << "Preview rotation: " << glm::degrees(previewRotation)
+                  << " degrees" << std::endl;
       }
     } else {
       if ((curDebounce == GLFW_KEY_R) && debounce) {
@@ -633,6 +666,13 @@ protected:
                    glm::scale(glm::mat4(1), glm::vec3(100.0f));
     SC.TI[2].I[0].DS[0][0]->map(currentImage, &sbubo, 0);
 
+    // grid pipeline
+    GridUniformBufferObject gridUbo{};
+    gridUbo.gVP = ViewPrj;
+    gridUbo.camWorldPos = cameraPos;
+    gridUbo.gridSize = gridSize;
+    DSgrid.map(currentImage, &gridUbo, 0);
+
     // std::cout << "Test delle textures" <<SC.I[3]  << "\n";
     // PBR objects
     for (instanceId = 0; instanceId < SC.TI[3].InstanceCount; instanceId++) {
@@ -646,9 +686,11 @@ protected:
 
     for (auto &component : minerStructure.components) {
       for (int i = 0; i < placedMiners.size(); i++) {
-        ubos.mMat[i] = glm::translate(glm::mat4(1.f), placedMiners[i].position) *
-                       glm::rotate(glm::mat4(1.0f), placedMiners[i].rotation, glm::vec3(0.0f, 1.0f, 0.0f)) *
-                       component.model.Wm;
+        ubos.mMat[i] =
+            glm::translate(glm::mat4(1.f), placedMiners[i].position) *
+            glm::rotate(glm::mat4(1.0f), placedMiners[i].rotation,
+                        glm::vec3(0.0f, 1.0f, 0.0f)) *
+            component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
         ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
       }
@@ -658,10 +700,12 @@ protected:
 
     if (isPlacingDrill) {
       UniformBufferObjectSimp ubosComponent{};
-      previewTransform = glm::translate(
-          glm::mat4(1.0f), calculateGroundPlacementPosition(
-                               cameraPos, getLookingVector(), gridSize)) *
-                         glm::rotate(glm::mat4(1.0f), previewRotation, glm::vec3(0.0f, 1.0f, 0.0f));
+      previewTransform =
+          glm::translate(glm::mat4(1.0f),
+                         calculateGroundPlacementPosition(
+                             cameraPos, getLookingVector(), gridSize)) *
+          glm::rotate(glm::mat4(1.0f), previewRotation,
+                      glm::vec3(0.0f, 1.0f, 0.0f));
 
       for (auto &component : minerStructure.components) {
         ubosComponent.mMat[0] = previewTransform * component.model.Wm;
@@ -730,7 +774,7 @@ protected:
     const glm::vec3 StartingPosition = glm::vec3(0.0, 0.0, 5);
     // Rotation and motion speed
     const float MOVE_SPEED_BASE = 2.0f;
-    const float MOVE_SPEED_RUN = 5.0f;
+    const float MOVE_SPEED_RUN = 10.0f;
 
     // bool fire = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
     float MOVE_SPEED = MOVE_SPEED_RUN;
@@ -857,9 +901,11 @@ protected:
         newPlacedMiner.rotation = app->previewRotation;
         app->placedMiners.push_back(newPlacedMiner);
         app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-        std::cout << "Miner position: " << app->placedMiners.back().position.x << ","
-                  << app->placedMiners.back().position.y << ","
-                  << app->placedMiners.back().position.z << ", rotation: " << glm::degrees(app->placedMiners.back().rotation) << " degrees\n";
+        std::cout << "Miner position: " << app->placedMiners.back().position.x
+                  << "," << app->placedMiners.back().position.y << ","
+                  << app->placedMiners.back().position.z << ", rotation: "
+                  << glm::degrees(app->placedMiners.back().rotation)
+                  << " degrees\n";
       }
     }
   }
