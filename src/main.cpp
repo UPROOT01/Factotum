@@ -107,6 +107,10 @@ protected:
   float previewRotation = 0.0f;
   DescriptorSet DSgrid;
 
+  const glm::vec4 validColorWRF = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan
+  const glm::vec4 invalidColorWRF = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+  bool isPlacementValid = true;
+
   // to provide textual feedback
   TextMaker txt;
 
@@ -301,8 +305,14 @@ protected:
     P_PBR.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
                "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
 
+    VkPushConstantRange pushConstRange{};
+    pushConstRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstRange.offset = 0;
+    pushConstRange.size = sizeof(glm::vec4);
+
     Pwireframe.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-                    "shaders/OnlyCyan.frag.spv", {&DSLglobal, &DSLlocalPBR});
+                    "shaders/OnlyCyan.frag.spv", {&DSLglobal, &DSLlocalPBR},
+                    {pushConstRange});
     Pwireframe.setPolygonMode(VK_POLYGON_MODE_LINE);
     // I want to be able to see the wireframe even from behind
     Pwireframe.setCullMode(VK_CULL_MODE_NONE);
@@ -506,8 +516,16 @@ protected:
     }
 
     if (isPlacingDrill) {
+      auto color =
+          isPlacementValid ? validColorWRF : invalidColorWRF;
+
       for (auto &component : minerStructure.components) {
         Pwireframe.bind(commandBuffer);
+
+        vkCmdPushConstants(commandBuffer, Pwireframe.pipelineLayout,
+                           VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::vec4),
+                           &color);
+
         component.model.bind(commandBuffer);
         component.previewDescriptorSet.bind(commandBuffer, Pwireframe, 1,
                                             currentImage);
@@ -699,6 +717,22 @@ protected:
     }
 
     if (isPlacingDrill) {
+      glm::vec3 placementPos = calculateGroundPlacementPosition(
+          cameraPos, getLookingVector(), gridSize);
+
+      bool prevState = isPlacementValid;
+      isPlacementValid = true;
+      for (auto &pos : placedMiners) {
+        if (pos.position == placementPos) {
+          isPlacementValid = false;
+          break;
+        }
+      }
+
+      if (prevState != isPlacementValid) {
+        submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+      }
+
       UniformBufferObjectSimp ubosComponent{};
       previewTransform =
           glm::translate(glm::mat4(1.0f),
@@ -883,19 +917,12 @@ protected:
   static void mouse_button_callback(GLFWwindow *window, int button, int action,
                                     int mods) {
     Factotum *app = (Factotum *)glfwGetWindowUserPointer(window);
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-      glm::vec3 newPos = app->calculateGroundPlacementPosition(
-          app->cameraPos, app->getLookingVector(), app->gridSize);
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
+        app->isPlacingDrill) {
+      if (app->isPlacementValid) {
+        glm::vec3 newPos = app->calculateGroundPlacementPosition(
+            app->cameraPos, app->getLookingVector(), app->gridSize);
 
-      bool positionOccupied = false;
-      for (const auto &pos : app->placedMiners) {
-        if (pos.position == newPos) {
-          positionOccupied = true;
-          break;
-        }
-      }
-
-      if (!positionOccupied) {
         PlacedMiner newPlacedMiner;
         newPlacedMiner.position = newPos;
         newPlacedMiner.rotation = app->previewRotation;
@@ -906,6 +933,9 @@ protected:
                   << app->placedMiners.back().position.z << ", rotation: "
                   << glm::degrees(app->placedMiners.back().rotation)
                   << " degrees\n";
+      } else {
+        std::cout << "Cannot place miner here: position is invalid."
+                  << std::endl;
       }
     }
   }

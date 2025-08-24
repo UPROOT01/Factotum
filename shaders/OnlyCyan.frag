@@ -3,6 +3,10 @@
 
 layout(location = 0) out vec4 outColor;
 
+layout(push_constant) uniform PushConstants {
+    vec4 color;
+} pConst;
+
 void main() {
-    outColor = vec4(0.0, 1.0, 1.0, 1.0); // Cyan color
+    outColor = pConst.color;
 }
