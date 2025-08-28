@@ -17,7 +17,9 @@
 		{"id": "scbmt", "texture": "assets/textures/SoccerBall/Untitled.png", "format": "D"},
 		{"id": "scbrf", "texture": "assets/textures/SoccerBall/Untitled-0.png", "format": "D"},
 		{"id": "Pavement_Concrete_Marked_Footprints_UV_CM_1", "texture": "assets/textures/MainScene/Pavement_Concrete_Marked_Footprints_UV_CM_1.jpg", "format": "C"},
-		{"id": "PavementConcreteNM", "texture": "assets/textures/MainScene/PavementConcreteNM.png", "format": "D"}
+		{"id": "PavementConcreteNM", "texture": "assets/textures/MainScene/PavementConcreteNM.png", "format": "D"},
+		{"id": "ccolor0", "texture": "assets/models/conveyor_belt/conveyor_belt.png", "format": "D"},
+		{"id": "ccolor1", "texture": "assets/models/conveyor_belt/conveyor_border.png", "format": "D"}
 	],
 	"instances": [
 		{"technique": "CookTorranceChar", "elements": [

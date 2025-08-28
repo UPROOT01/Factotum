@@ -101,8 +101,8 @@ protected:
   std::vector<VertexDescriptorRef> VDRs;
   std::vector<TechniqueRef> PRs;
 
-  Structure minerStructure;
-  bool isPlacingDrill = false;
+  Structure minerStructure, conveyorStructure;
+  bool isPlacing = false;
   glm::mat4 previewTransform;
   float previewRotation = 0.0f;
   DescriptorSet DSgrid;
@@ -110,6 +110,10 @@ protected:
   const glm::vec4 validColorWRF = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan
   const glm::vec4 invalidColorWRF = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
   bool isPlacementValid = true;
+
+  // inventory
+  enum InventoryItem { MINER, CONVEYOR_BELT };
+  InventoryItem inventoryItem = MINER;
 
   // to provide textual feedback
   TextMaker txt;
@@ -119,7 +123,7 @@ protected:
 
   glm::mat4 ViewPrj;
   glm::mat4 World;
-  glm::vec3 Pos = glm::vec3(0, 0, 5);
+  glm::vec3 Pos = glm::vec3(0, 5, 0);
   glm::vec3 cameraPos;
   float Yaw = 0.0f;
   float Pitch = 0.0f;
@@ -334,6 +338,13 @@ protected:
     minerStructure.components[3].model.initFromAsset(this, &VDtan, &assetMiner,
                                                      "Pyramid", 0, "Pyramid");
 
+    conveyorStructure.components.resize(3);
+    AssetFile assetConveyor;
+    assetConveyor.init("assets/models/conveyor_belt/conveyor.gltf", GLTF);
+    conveyorStructure.components[0].model.initFromAsset(this, &VDtan, &assetConveyor, "Cube.001", 0, "Cube.001");
+    conveyorStructure.components[1].model.initFromAsset(this, &VDtan, &assetConveyor, "Cube.002", 0, "Cube.002");
+    conveyorStructure.components[2].model.initFromAsset(this, &VDtan, &assetConveyor, "Cube.003", 0, "Cube.003");
+
     PRs.resize(4);
     PRs[0].init("CookTorranceChar",
                 {{&Pchar,
@@ -384,7 +395,7 @@ protected:
     // sets the size of the Descriptor Set Pool
     DPSZs.uniformBlocksInPool = 3;
     DPSZs.texturesInPool = 4;
-    DPSZs.setsInPool = 8;
+    DPSZs.setsInPool = 14;
 
     std::cout << "\nLoading the scene\n\n";
     if (SC.init(this, /*Npasses*/ 1, VDRs, PRs, "assets/models/scene.json") !=
@@ -434,6 +445,14 @@ protected:
            SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
     }
 
+    // init conveyor components
+    conveyorStructure.components[0].previewDescriptorSet.init(this, &DSLlocalPBR, {SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler()});
+    conveyorStructure.components[0].standardDescriptorSet.init(this, &DSLlocalPBR, {SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler()});
+    conveyorStructure.components[1].previewDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[1].standardDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[2].previewDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[2].standardDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
+
     DSgrid.init(this, &DSLgrid, {});
     SC.pipelinesAndDescriptorSetsInit();
     txt.pipelinesAndDescriptorSetsInit();
@@ -451,6 +470,12 @@ protected:
 
     // Cleanup descriptor sets for each component in minerStructurePreview
     for (auto &component : minerStructure.components) {
+      component.previewDescriptorSet.cleanup();
+      component.standardDescriptorSet.cleanup();
+    }
+
+    // conveyor cleanup
+    for (auto &component : conveyorStructure.components) {
       component.previewDescriptorSet.cleanup();
       component.standardDescriptorSet.cleanup();
     }
@@ -478,6 +503,10 @@ protected:
     Pwireframe.destroy();
     Pgrid.destroy();
     for (auto &component : minerStructure.components) {
+      component.model.cleanup();
+    }
+
+    for (auto &component : conveyorStructure.components) {
       component.model.cleanup();
     }
 
@@ -515,11 +544,21 @@ protected:
                        placedMiners.size(), 0, 0, 0);
     }
 
-    if (isPlacingDrill) {
+    if (isPlacing) {
+      Structure *selectedStructure = &minerStructure;
+      switch (inventoryItem) {
+      case MINER:
+        selectedStructure = &minerStructure;
+        break;
+      case CONVEYOR_BELT:
+        selectedStructure = &conveyorStructure;
+        break;
+      }
+
       auto color =
           isPlacementValid ? validColorWRF : invalidColorWRF;
 
-      for (auto &component : minerStructure.components) {
+      for (auto &component : selectedStructure->components) {
         Pwireframe.bind(commandBuffer);
 
         vkCmdPushConstants(commandBuffer, Pwireframe.pipelineLayout,
@@ -560,6 +599,9 @@ protected:
         debounce = true;
         curDebounce = GLFW_KEY_1;
 
+        inventoryItem = MINER;
+        std::cout << "Selected MINER\n";
+
         debug1.x = 1.0 - debug1.x;
       }
     } else {
@@ -573,6 +615,9 @@ protected:
       if (!debounce) {
         debounce = true;
         curDebounce = GLFW_KEY_2;
+
+        inventoryItem = CONVEYOR_BELT;
+        std::cout << "Selected CONVEYOR_BELT\n";
 
         debug1.y = 1.0 - debug1.y;
       }
@@ -617,10 +662,10 @@ protected:
       if (!debounce) {
         debounce = true;
         curDebounce = GLFW_KEY_T;
-        isPlacingDrill = !isPlacingDrill;
+        isPlacing = !isPlacing;
         submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
         std::cout << "Wireframe placement mode: "
-                  << (isPlacingDrill ? "ON" : "OFF") << std::endl;
+                  << (isPlacing ? "ON" : "OFF") << std::endl;
         return;
       }
     } else {
@@ -716,7 +761,7 @@ protected:
       component.standardDescriptorSet.map(currentImage, &ubos, 0);
     }
 
-    if (isPlacingDrill) {
+    if (isPlacing) {
       glm::vec3 placementPos = calculateGroundPlacementPosition(
           cameraPos, getLookingVector(), gridSize);
 
@@ -750,6 +795,27 @@ protected:
         component.previewDescriptorSet.map(currentImage, &ubosComponent, 0);
       }
     }
+
+    // display inventory information
+    std::stringstream inventory_str;
+    inventory_str << "Selected item: ";
+
+    switch (inventoryItem) {
+    case MINER:
+      inventory_str << "Miner";
+      break;
+    case CONVEYOR_BELT:
+      inventory_str << "Conveyor Belt";
+      break;
+    default:
+      inventory_str << "Unrecognized Item";
+      break;
+    }
+
+    txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO",
+              false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP,
+              {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+
     // updates the FPS
     static float elapsedT = 0.0f;
     static int countedFrames = 0;
@@ -918,7 +984,7 @@ protected:
                                     int mods) {
     Factotum *app = (Factotum *)glfwGetWindowUserPointer(window);
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
-        app->isPlacingDrill) {
+        app->isPlacing) {
       if (app->isPlacementValid) {
         glm::vec3 newPos = app->calculateGroundPlacementPosition(
             app->cameraPos, app->getLookingVector(), app->gridSize);
