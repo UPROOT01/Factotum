@@ -1,0 +1,11 @@
+Model Information:
+* title:	Furnace
+* source:	https://sketchfab.com/3d-models/furnace-64f344213c084424ba438875e62bd452
+* author:	Tronin Dmitry (https://sketchfab.com/kosmotron)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Furnace" (https://sketchfab.com/3d-models/furnace-64f344213c084424ba438875e62bd452) by Tronin Dmitry (https://sketchfab.com/kosmotron) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

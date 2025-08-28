@@ -84,7 +84,7 @@ protected:
 
   // Descriptor Layouts [what will be passed to the shaders]
   DescriptorSetLayout DSLlocalChar, DSLlocalSimp, DSLlocalPBR, DSLglobal,
-      DSLskyBox, DSLgrid;
+      DSLskyBox, DSLgrid, DSLlocalPBRCoal;
 
   // Vertex formants, Pipelines [Shader couples] and Render passes
   VertexDescriptor VDchar;
@@ -93,7 +93,7 @@ protected:
   VertexDescriptor VDtan;
   VertexDescriptor VDgrid;
   RenderPass RP;
-  Pipeline Pchar, PsimpObj, PskyBox, P_PBR, Pwireframe, Pgrid;
+  Pipeline Pchar, PsimpObj, PskyBox, P_PBR, P_PBRCoal, Pwireframe, Pgrid;
   //*DBG*/Pipeline PDebug;
 
   // Models, textures and Descriptors (values assigned to the uniforms)
@@ -232,6 +232,23 @@ protected:
                 VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},
                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}});
+    DSLlocalPBRCoal.init(
+        this, {// this array contains the binding:
+               // first  element : the binding number
+               // second element : the type of element (buffer or texture)
+               // third  element : the pipeline stage where it will be used
+               {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObjectSimp), 1},
+               {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
+               {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1},
+               {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},
+               {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},
+               {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1}});
 
     DSLgrid.init(this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                          VK_SHADER_STAGE_ALL_GRAPHICS,
@@ -309,6 +326,9 @@ protected:
     P_PBR.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
                "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
 
+    P_PBRCoal.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
+               "shaders/PBR_coal.frag.spv", {&DSLglobal, &DSLlocalPBRCoal});
+
     VkPushConstantRange pushConstRange{};
     pushConstRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstRange.offset = 0;
@@ -341,11 +361,14 @@ protected:
     conveyorStructure.components.resize(3);
     AssetFile assetConveyor;
     assetConveyor.init("assets/models/conveyor_belt/conveyor.gltf", GLTF);
-    conveyorStructure.components[0].model.initFromAsset(this, &VDtan, &assetConveyor, "Cube.001", 0, "Cube.001");
-    conveyorStructure.components[1].model.initFromAsset(this, &VDtan, &assetConveyor, "Cube.002", 0, "Cube.002");
-    conveyorStructure.components[2].model.initFromAsset(this, &VDtan, &assetConveyor, "Cube.003", 0, "Cube.003");
+    conveyorStructure.components[0].model.initFromAsset(
+        this, &VDtan, &assetConveyor, "Cube.001", 0, "Cube.001");
+    conveyorStructure.components[1].model.initFromAsset(
+        this, &VDtan, &assetConveyor, "Cube.002", 0, "Cube.002");
+    conveyorStructure.components[2].model.initFromAsset(
+        this, &VDtan, &assetConveyor, "Cube.003", 0, "Cube.003");
 
-    PRs.resize(4);
+    PRs.resize(5);
     PRs[0].init("CookTorranceChar",
                 {{&Pchar,
                   {// Pipeline and DSL for the first pass
@@ -389,13 +412,30 @@ protected:
                                             // the json file
                    }}}},
                 /*TotalNtextures*/ 4, &VDtan);
+    PRs[4].init("PBR_coal",
+                {{&P_PBRCoal,
+                  {// Pipeline and DSL for the first pass
+                   /*DSLglobal*/ {},
+                   /*DSLlocalPBRCoal*/ {
+                       /*t0*/ {true, 0, {}}, // index 0 of the "texture" field
+                                             // in the json file
+                       /*t1*/ {true, 1, {}}, // index 1 of the "texture" field
+                                             // in the json file
+                       /*t2*/ {true, 2, {}}, // index 2 of the "texture" field
+                                             // in the json file
+                       /*t3*/ {true, 3, {}}, // index 3 of the "texture" field in
+                                            // the json file
+                       /*t4*/ {true, 4, {}} // index 4 of the "texture" field in
+                                            // the json file
+                   }}}},
+                /*TotalNtextures*/ 5, &VDtan);
 
     // Models, textures and Descriptors (values assigned to the uniforms)
 
     // sets the size of the Descriptor Set Pool
-    DPSZs.uniformBlocksInPool = 3;
-    DPSZs.texturesInPool = 4;
-    DPSZs.setsInPool = 14;
+    DPSZs.uniformBlocksInPool = 100;
+    DPSZs.texturesInPool = 100;
+    DPSZs.setsInPool = 100;
 
     std::cout << "\nLoading the scene\n\n";
     if (SC.init(this, /*Npasses*/ 1, VDRs, PRs, "assets/models/scene.json") !=
@@ -432,6 +472,7 @@ protected:
     P_PBR.create(&RP);
     Pwireframe.create(&RP);
     Pgrid.create(&RP);
+    P_PBRCoal.create(&RP);
 
     for (auto &component : minerStructure.components) {
       component.previewDescriptorSet.init(
@@ -446,12 +487,30 @@ protected:
     }
 
     // init conveyor components
-    conveyorStructure.components[0].previewDescriptorSet.init(this, &DSLlocalPBR, {SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler()});
-    conveyorStructure.components[0].standardDescriptorSet.init(this, &DSLlocalPBR, {SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler(),SC.T[10]->getViewAndSampler()});
-    conveyorStructure.components[1].previewDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[1].standardDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[2].previewDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[2].standardDescriptorSet.init(this, &DSLlocalPBR, {SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler(),SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[0].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
+         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
+    conveyorStructure.components[0].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
+         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
+    conveyorStructure.components[1].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[1].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[2].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[2].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
 
     DSgrid.init(this, &DSLgrid, {});
     SC.pipelinesAndDescriptorSetsInit();
@@ -467,6 +526,7 @@ protected:
     Pwireframe.cleanup();
     Pgrid.cleanup();
     RP.cleanup();
+    P_PBRCoal.cleanup();
 
     // Cleanup descriptor sets for each component in minerStructurePreview
     for (auto &component : minerStructure.components) {
@@ -492,6 +552,7 @@ protected:
     DSLlocalChar.cleanup();
     DSLlocalSimp.cleanup();
     DSLlocalPBR.cleanup();
+    DSLlocalPBRCoal.cleanup();
     DSLskyBox.cleanup();
     DSLglobal.cleanup();
     DSLgrid.cleanup();
@@ -502,6 +563,7 @@ protected:
     P_PBR.destroy();
     Pwireframe.destroy();
     Pgrid.destroy();
+    P_PBRCoal.destroy();
     for (auto &component : minerStructure.components) {
       component.model.cleanup();
     }
@@ -555,8 +617,7 @@ protected:
         break;
       }
 
-      auto color =
-          isPlacementValid ? validColorWRF : invalidColorWRF;
+      auto color = isPlacementValid ? validColorWRF : invalidColorWRF;
 
       for (auto &component : selectedStructure->components) {
         Pwireframe.bind(commandBuffer);
@@ -664,8 +725,8 @@ protected:
         curDebounce = GLFW_KEY_T;
         isPlacing = !isPlacing;
         submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
-        std::cout << "Wireframe placement mode: "
-                  << (isPlacing ? "ON" : "OFF") << std::endl;
+        std::cout << "Wireframe placement mode: " << (isPlacing ? "ON" : "OFF")
+                  << std::endl;
         return;
       }
     } else {
@@ -747,6 +808,16 @@ protected:
       SC.TI[3].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
     }
 
+    // PBR_coal objects
+    for (instanceId = 0; instanceId < SC.TI[4].InstanceCount; instanceId++) {
+      ubos.mMat[0] = SC.TI[4].I[instanceId].Wm;
+      ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
+      ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
+
+      SC.TI[4].I[instanceId].DS[0][0]->map(currentImage, &gubo, 0); // Set 0
+      SC.TI[4].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
+    }
+
     for (auto &component : minerStructure.components) {
       for (int i = 0; i < placedMiners.size(); i++) {
         ubos.mMat[i] =
@@ -812,9 +883,9 @@ protected:
       break;
     }
 
-    txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO",
-              false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP,
-              {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO", false, false, false,
+              TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
 
     // updates the FPS
     static float elapsedT = 0.0f;
