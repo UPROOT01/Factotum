@@ -139,11 +139,12 @@ protected:
   //-Timing
   float lastFrame = 0.0f;
 
-  struct PlacedMiner {
+  struct PlacedObject {
+    InventoryItem type;
     glm::vec3 position;
     float rotation;
   };
-  std::vector<PlacedMiner> placedMiners;
+  std::vector<PlacedObject> placedObjects;
 
   // Here you set the main application parameters
   void setWindowParameters() {
@@ -232,6 +233,7 @@ protected:
                 VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},
                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}});
+
     DSLlocalPBRCoal.init(
         this, {// this array contains the binding:
                // first  element : the binding number
@@ -246,9 +248,7 @@ protected:
                {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},
                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},
-               {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1}});
+                VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}});
 
     DSLgrid.init(this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                          VK_SHADER_STAGE_ALL_GRAPHICS,
@@ -601,14 +601,28 @@ protected:
 
     P_PBR.bind(commandBuffer);
     DSglobal.bind(commandBuffer, P_PBR, 0, currentImage);
+
+    std::vector<PlacedObject> placedMiners, placedConveyors;
+    for (const auto &obj : placedObjects) {
+      if (obj.type == MINER) {
+        placedMiners.push_back(obj);
+      } else {
+        placedConveyors.push_back(obj);
+      }
+    }
+
     for (auto &component : minerStructure.components) {
 
       component.model.bind(commandBuffer);
-      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1,
-                                           currentImage);
-      vkCmdDrawIndexed(commandBuffer,
-                       static_cast<uint32_t>(component.model.indices.size()),
-                       placedMiners.size(), 0, 0, 0);
+      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1, currentImage);
+      vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedMiners.size(), 0, 0, 0);
+    }
+
+    for (auto &component : conveyorStructure.components) {
+
+      component.model.bind(commandBuffer);
+      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1, currentImage);
+      vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedConveyors.size(), 0, 0, 0);
     }
 
     if (isPlacing) {
@@ -667,6 +681,8 @@ protected:
 
         inventoryItem = MINER;
         std::cout << "Selected MINER\n";
+        if (isPlacing)
+          submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
         debug1.x = 1.0 - debug1.x;
       }
@@ -684,6 +700,8 @@ protected:
 
         inventoryItem = CONVEYOR_BELT;
         std::cout << "Selected CONVEYOR_BELT\n";
+        if (isPlacing)
+          submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
         debug1.y = 1.0 - debug1.y;
       }
@@ -825,11 +843,35 @@ protected:
       SC.TI[4].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
     }
 
+    std::vector<PlacedObject> placedMiners;
+    std::vector<PlacedObject> placedConveyors;
+    for (const auto &object : placedObjects) {
+      if (object.type == MINER) {
+        placedMiners.push_back(object);
+      } else if (object.type == CONVEYOR_BELT) {
+        placedConveyors.push_back(object);
+      }
+    }
+
     for (auto &component : minerStructure.components) {
       for (int i = 0; i < placedMiners.size(); i++) {
         ubos.mMat[i] =
             glm::translate(glm::mat4(1.f), placedMiners[i].position) *
             glm::rotate(glm::mat4(1.0f), placedMiners[i].rotation,
+                        glm::vec3(0.0f, 1.0f, 0.0f)) *
+            component.model.Wm;
+        ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
+        ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
+      }
+
+      component.standardDescriptorSet.map(currentImage, &ubos, 0);
+    }
+
+    for (auto &component : conveyorStructure.components) {
+      for (int i = 0; i < placedConveyors.size(); i++) {
+        ubos.mMat[i] =
+            glm::translate(glm::mat4(1.f), placedConveyors[i].position) *
+            glm::rotate(glm::mat4(1.0f), placedConveyors[i].rotation,
                         glm::vec3(0.0f, 1.0f, 0.0f)) *
             component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
@@ -845,7 +887,7 @@ protected:
 
       bool prevState = isPlacementValid;
       isPlacementValid = true;
-      for (auto &pos : placedMiners) {
+      for (auto &pos : placedObjects) {
         if (pos.position == placementPos) {
           isPlacementValid = false;
           break;
@@ -864,7 +906,9 @@ protected:
           glm::rotate(glm::mat4(1.0f), previewRotation,
                       glm::vec3(0.0f, 1.0f, 0.0f));
 
-      for (auto &component : minerStructure.components) {
+      Structure *selectedStructure = (inventoryItem == MINER) ? &minerStructure : &conveyorStructure;
+
+      for (auto &component : selectedStructure->components) {
         ubosComponent.mMat[0] = previewTransform * component.model.Wm;
         ubosComponent.mvpMat[0] = ViewPrj * ubosComponent.mMat[0];
         ubosComponent.nMat[0] =
@@ -1067,18 +1111,20 @@ protected:
         glm::vec3 newPos = app->calculateGroundPlacementPosition(
             app->cameraPos, app->getLookingVector(), app->gridSize);
 
-        PlacedMiner newPlacedMiner;
-        newPlacedMiner.position = newPos;
-        newPlacedMiner.rotation = app->previewRotation;
-        app->placedMiners.push_back(newPlacedMiner);
+        PlacedObject newPlacedObject;
+        newPlacedObject.type = app->inventoryItem;
+        newPlacedObject.position = newPos;
+        newPlacedObject.rotation = app->previewRotation;
+        app->placedObjects.push_back(newPlacedObject);
         app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-        std::cout << "Miner position: " << app->placedMiners.back().position.x
-                  << "," << app->placedMiners.back().position.y << ","
-                  << app->placedMiners.back().position.z << ", rotation: "
-                  << glm::degrees(app->placedMiners.back().rotation)
+        std::cout << "Placed a new object of type " << app->inventoryItem
+                  << " at position: " << newPlacedObject.position.x << ","
+                  << newPlacedObject.position.y << ","
+                  << newPlacedObject.position.z
+                  << ", rotation: " << glm::degrees(newPlacedObject.rotation)
                   << " degrees\n";
       } else {
-        std::cout << "Cannot place miner here: position is invalid."
+        std::cout << "Cannot place object here: position is invalid."
                   << std::endl;
       }
     }
