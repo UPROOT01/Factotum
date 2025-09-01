@@ -105,7 +105,7 @@ protected:
   bool isPlacing = false;
   glm::mat4 previewTransform;
   float previewRotation = 0.0f;
-  DescriptorSet DSgrid;
+  DescriptorSet DSgrid, DSglobal;
 
   const glm::vec4 validColorWRF = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);   // Cyan
   const glm::vec4 invalidColorWRF = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
@@ -513,6 +513,7 @@ protected:
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
 
     DSgrid.init(this, &DSLgrid, {});
+    DSglobal.init(this, &DSLglobal, {});
     SC.pipelinesAndDescriptorSetsInit();
     txt.pipelinesAndDescriptorSetsInit();
   }
@@ -541,6 +542,7 @@ protected:
     }
 
     DSgrid.cleanup();
+    DSglobal.cleanup();
 
     SC.pipelinesAndDescriptorSetsCleanup();
     txt.pipelinesAndDescriptorSetsCleanup();
@@ -596,6 +598,9 @@ protected:
     RP.begin(commandBuffer, currentImage);
 
     SC.populateCommandBuffer(commandBuffer, 0, currentImage);
+
+    P_PBR.bind(commandBuffer);
+    DSglobal.bind(commandBuffer, P_PBR, 0, currentImage);
     for (auto &component : minerStructure.components) {
 
       component.model.bind(commandBuffer);
@@ -770,6 +775,8 @@ protected:
     gubo.lightDir = lightDir;
     gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gubo.eyePos = cameraPos;
+
+    DSglobal.map(currentImage, &gubo, 0);
 
     // defines the local parameters for the uniforms
     UniformBufferObjectChar uboc{};
