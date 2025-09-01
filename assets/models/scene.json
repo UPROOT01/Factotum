@@ -1,19 +1,11 @@
 {
 	"assetfiles": [
 		{"id": "ct", "file": "assets/models/MainSceneEnvOnly.gltf", "format":"GLTF"},
-		{"id": "ut","file": "assets/models/Miner.gltf", "format":"GLTF"},
-		{"id": "furnace_asset", "file": "assets/models/furnace/scene.gltf", "format": "GLTF"}
+		{"id": "ut","file": "assets/models/Miner.gltf", "format":"GLTF"}
 	],
 	"models": [
 		{"id": "skybox", "VD": "VDskybox", "model": "assets/models/SkyBoxCube.obj", "format":"OBJ"},
-		{"id": "ground",  "VD": "VDtan",  "model": "Ground", "node": "Ground", "meshId": 0, "asset": "ct", "format":"ASSET"},
-		{"id": "LP_body_Furnace_0", "VD": "VDtan", "model": "LP_body_Furnace_0", "node": "LP_body_Furnace_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"},
-		{"id": "LP_coal_Coal_0", "VD": "VDtan", "model": "LP_coal_Coal_0", "node": "LP_coal_Coal_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"},
-		{"id": "LP_lever_Metal_0", "VD": "VDtan", "model": "LP_lever_Metal_0", "node": "LP_lever_Metal_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"},
-		{"id": "LP_chain_Metal_0", "VD": "VDtan", "model": "LP_chain_Metal_0", "node": "LP_chain_Metal_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"},
-		{"id": "LP_Cotl_Metal_0", "VD": "VDtan", "model": "LP_Cotl_Metal_0", "node": "LP_Cotl_Metal_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"},
-		{"id": "LP_form_Furnace_0", "VD": "VDtan", "model": "LP_form_Furnace_0", "node": "LP_form_Furnace_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"},
-		{"id": "LP_rail_Metal_0", "VD": "VDtan", "model": "LP_rail_Metal_0", "node": "LP_rail_Metal_0", "meshId": 0, "asset": "furnace_asset", "format": "ASSET"}
+		{"id": "ground",  "VD": "VDtan",  "model": "Ground", "node": "Ground", "meshId": 0, "asset": "ct", "format":"ASSET"}
 	],
 	"textures": [
 		{"id": "dcolor",    "texture": "assets/textures/drill/Metal028_4K-JPG_Color.jpg",	   "format": "D"},
@@ -28,16 +20,16 @@
 		{"id": "PavementConcreteNM", "texture": "assets/textures/MainScene/PavementConcreteNM.png", "format": "D"},
 		{"id": "ccolor0", "texture": "assets/models/conveyor_belt/conveyor_belt.png", "format": "D"},
 		{"id": "ccolor1", "texture": "assets/models/conveyor_belt/conveyor_border.png", "format": "D"},
-		{"id": "furnace_basecolor", "texture": "assets/models/furnace/textures/Furnace_baseColor.png", "format": "D"},
-		{"id": "furnace_normal", "texture": "assets/models/furnace/textures/Furnace_normal.png", "format": "D"},
-		{"id": "furnace_metalrough", "texture": "assets/models/furnace/textures/Furnace_metallicRoughness.png", "format": "D"},
-		{"id": "coal_basecolor", "texture": "assets/models/furnace/textures/Coal_baseColor.png", "format": "D"},
-		{"id": "coal_metalrough", "texture": "assets/models/furnace/textures/Coal_metallicRoughness.png", "format": "D"},
-		{"id": "coal_emissive", "texture": "assets/models/furnace/textures/Coal_emissive.png", "format": "D"},
-		{"id": "coal_normal", "texture": "assets/models/furnace/textures/Coal_normal.png", "format": "D"},
-		{"id": "metal_basecolor", "texture": "assets/models/furnace/textures/Metal_baseColor.png", "format": "D"},
-		{"id": "metal_metalrough", "texture": "assets/models/furnace/textures/Metal_metallicRoughness.png", "format": "D"},
-		{"id": "metal_normal", "texture": "assets/models/furnace/textures/Metal_normal.png", "format": "D"}
+		{"id": "furnace_basecolor", "texture": "assets/models/furnace_new/Furnace_baseColor.png", "format": "D"},
+		{"id": "furnace_normal", "texture": "assets/models/furnace_new/Furnace_normal.png", "format": "D"},
+		{"id": "furnace_metalrough", "texture": "assets/models/furnace_new/Furnace_metallicRoughness.png", "format": "D"},
+		{"id": "coal_basecolor", "texture": "assets/models/furnace_new/Coal_baseColor.png", "format": "D"},
+		{"id": "coal_metalrough", "texture": "assets/models/furnace_new/Coal_metallicRoughness.png", "format": "D"},
+		{"id": "coal_emissive", "texture": "assets/models/furnace_new/Coal_emissive.png", "format": "D"},
+		{"id": "coal_normal", "texture": "assets/models/furnace_new/Coal_normal.png", "format": "D"},
+		{"id": "metal_basecolor", "texture": "assets/models/furnace_new/Metal_baseColor.png", "format": "D"},
+		{"id": "metal_metalrough", "texture": "assets/models/furnace_new/Metal_metallicRoughness.png", "format": "D"},
+		{"id": "metal_normal", "texture": "assets/models/furnace_new/Metal_normal.png", "format": "D"}
 	],
 	"instances": [
 		{"technique": "CookTorranceChar", "elements": [
@@ -48,16 +40,9 @@
 			{"id": "skybox",  "model": "skybox",   "texture": ["skybox"]}
 		]}, 
 		{"technique": "PBR", "elements": [
-			{"id": "ground",  "model": "ground",   "texture": ["Pavement_Concrete_Marked_Footprints_UV_CM_1", "PavementConcreteNM", "scbmt", "Untitled"]},
-			{"id": "LP_body_Furnace_0_inst", "model": "LP_body_Furnace_0", "texture": ["furnace_basecolor", "furnace_normal", "furnace_metalrough", "scbmt"]},
-			{"id": "LP_lever_Metal_0_inst", "model": "LP_lever_Metal_0", "texture": ["metal_basecolor", "metal_normal", "metal_metalrough", "scbmt"]},
-			{"id": "LP_chain_Metal_0_inst", "model": "LP_chain_Metal_0", "texture": ["metal_basecolor", "metal_normal", "metal_metalrough", "scbmt"]},
-			{"id": "LP_Cotl_Metal_0_inst", "model": "LP_Cotl_Metal_0", "texture": ["metal_basecolor", "metal_normal", "metal_metalrough", "scbmt"]},
-			{"id": "LP_form_Furnace_0_inst", "model": "LP_form_Furnace_0", "texture": ["furnace_basecolor", "furnace_normal", "furnace_metalrough", "scbmt"]},
-			{"id": "LP_rail_Metal_0_inst", "model": "LP_rail_Metal_0", "texture": ["metal_basecolor", "metal_normal", "metal_metalrough", "scbmt"]}
+			{"id": "ground",  "model": "ground",   "texture": ["Pavement_Concrete_Marked_Footprints_UV_CM_1", "PavementConcreteNM", "scbmt", "Untitled"]}
 		]},
     {"technique": "PBR_coal", "elements":[
-			{"id": "LP_coal_Coal_0_inst", "model": "LP_coal_Coal_0", "texture": ["coal_basecolor", "coal_normal", "coal_metalrough",  "scbmt","coal_emissive" ]}
     ]}
 	]
 }

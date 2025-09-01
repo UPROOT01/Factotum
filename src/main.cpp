@@ -327,7 +327,7 @@ protected:
                "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
 
     P_PBRCoal.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-               "shaders/PBR_coal.frag.spv", {&DSLglobal, &DSLlocalPBRCoal});
+                   "shaders/PBR_coal.frag.spv", {&DSLglobal, &DSLlocalPBRCoal});
 
     VkPushConstantRange pushConstRange{};
     pushConstRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -360,7 +360,7 @@ protected:
 
     conveyorStructure.components.resize(3);
     AssetFile assetConveyor;
-    assetConveyor.init("assets/models/conveyor_belt/conveyor.gltf", GLTF);
+    assetConveyor.init("assets/models/conveyor_belt/conveyor_belt.gltf", GLTF);
     conveyorStructure.components[0].model.initFromAsset(
         this, &VDtan, &assetConveyor, "Cube.001", 0, "Cube.001");
     conveyorStructure.components[1].model.initFromAsset(
@@ -368,16 +368,41 @@ protected:
     conveyorStructure.components[2].model.initFromAsset(
         this, &VDtan, &assetConveyor, "Cube.003", 0, "Cube.003");
 
-    furnaceStructure.components.resize(7);
+    // for (auto &component : conveyorStructure.components) {
+    //   component.model.Wm = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * 
+    //                        glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 1.0f)) * 
+    //                        component.model.Wm;
+    // }
+    //
+    // conveyorStructure.components[0].model.Wm = glm::translate(glm::mat4(1.0f), glm::vec3(-0.9f, 0.0f, -0.1f)) * conveyorStructure.components[0].model.Wm;
+    // conveyorStructure.components[1].model.Wm = glm::translate(glm::mat4(1.0f), glm::vec3(0.9f, 0.0f, -0.1f)) * conveyorStructure.components[1].model.Wm;
+    // conveyorStructure.components[2].model.Wm = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.1f)) * conveyorStructure.components[2].model.Wm;
+
+    furnaceStructure.components.resize(3);
     AssetFile assetFurnace;
-    assetFurnace.init("assets/models/furnace/scene.gltf", GLTF);
-    furnaceStructure.components[0].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_body_Furnace_0", 0, "LP_body_Furnace_0");
-    furnaceStructure.components[1].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_coal_Coal_0", 0, "LP_coal_Coal_0");
-    furnaceStructure.components[2].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_lever_Metal_0", 0, "LP_lever_Metal_0");
-    furnaceStructure.components[3].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_chain_Metal_0", 0, "LP_chain_Metal_0");
-    furnaceStructure.components[4].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_Cotl_Metal_0", 0, "LP_Cotl_Metal_0");
-    furnaceStructure.components[5].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_form_Furnace_0", 0, "LP_form_Furnace_0");
-    furnaceStructure.components[6].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_rail_Metal_0", 0, "LP_rail_Metal_0");
+    assetFurnace.init("assets/models/furnace_new/furnace.gltf", GLTF);
+    furnaceStructure.components[0].model.initFromAsset(
+        this, &VDtan, &assetFurnace, "LP_coal_Coal_0", 0, "LP_coal_Coal_0");
+    furnaceStructure.components[1].model.initFromAsset(
+        this, &VDtan, &assetFurnace, "LP_rail_Metal_0", 0, "LP_rail_Metal_0");
+    furnaceStructure.components[2].model.initFromAsset(
+        this, &VDtan, &assetFurnace, "LP_rail_Metal_0", 1, "LP_rail_Metal_0");
+
+    furnaceStructure.components[0].model.Wm =
+        glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 1.0f, .0f)) *
+        glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+                    glm::vec3(1.0f, 0.0f, 0.0f)) *
+        furnaceStructure.components[0].model.Wm;
+
+    for (int i = 1; i < furnaceStructure.components.size(); i++) {
+      furnaceStructure.components[i].model.Wm =
+          glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+          glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+                      glm::vec3(1.0f, 0.0f, 0.0f)) *
+          glm::rotate(glm::mat4(1.0f), glm::radians(27.0f),
+                      glm::vec3(0.0f, 1.0f, 0.0f)) *
+          furnaceStructure.components[i].model.Wm;
+    }
 
     PRs.resize(5);
     PRs[0].init("CookTorranceChar",
@@ -434,8 +459,8 @@ protected:
                                              // in the json file
                        /*t2*/ {true, 2, {}}, // index 2 of the "texture" field
                                              // in the json file
-                       /*t3*/ {true, 3, {}}, // index 3 of the "texture" field in
-                                            // the json file
+                       /*t3*/ {true, 3, {}}, // index 3 of the "texture" field
+                                             // in the json file
                        /*t4*/ {true, 4, {}} // index 4 of the "texture" field in
                                             // the json file
                    }}}},
@@ -500,44 +525,56 @@ protected:
     // init conveyor components
     conveyorStructure.components[0].previewDescriptorSet.init(
         this, &DSLlocalPBR,
-        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
-         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
-        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
-         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[1].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+      this, &DSLlocalPBR,
+      {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+        SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[1].standardDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+      this, &DSLlocalPBR,
+      {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+        SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[2].previewDescriptorSet.init(
         this, &DSLlocalPBR,
-        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
+         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
     conveyorStructure.components[2].standardDescriptorSet.init(
         this, &DSLlocalPBR,
-        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
+         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
 
     // init furnace components
-    furnaceStructure.components[0].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
-    furnaceStructure.components[0].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
-    furnaceStructure.components[1].previewDescriptorSet.init(this, &DSLlocalPBRCoal, { SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(), SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler() });
-    furnaceStructure.components[1].standardDescriptorSet.init(this, &DSLlocalPBRCoal, { SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(), SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler() });
-    furnaceStructure.components[2].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[2].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[3].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[3].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[4].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[4].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[5].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
-    furnaceStructure.components[5].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
-    furnaceStructure.components[6].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
-    furnaceStructure.components[6].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[0].previewDescriptorSet.init(
+        this, &DSLlocalPBRCoal,
+        {SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(),
+         SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler()});
+    furnaceStructure.components[0].standardDescriptorSet.init(
+        this, &DSLlocalPBRCoal,
+        {SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(),
+         SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler()});
+
+    furnaceStructure.components[1].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(),
+         SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler()});
+    furnaceStructure.components[1].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(),
+         SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler()});
+
+    furnaceStructure.components[2].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(),
+         SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler()});
+    furnaceStructure.components[2].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(),
+         SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler()});
 
     DSgrid.init(this, &DSLgrid, {});
     DSglobal.init(this, &DSLglobal, {});
@@ -652,21 +689,45 @@ protected:
 
     for (auto &component : minerStructure.components) {
       component.model.bind(commandBuffer);
-      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1, currentImage);
-      vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedMiners.size(), 0, 0, 0);
+      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1,
+                                           currentImage);
+      vkCmdDrawIndexed(commandBuffer,
+                       static_cast<uint32_t>(component.model.indices.size()),
+                       placedMiners.size(), 0, 0, 0);
     }
 
     for (auto &component : conveyorStructure.components) {
       component.model.bind(commandBuffer);
-      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1, currentImage);
-      vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedConveyors.size(), 0, 0, 0);
+      component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1,
+                                           currentImage);
+      vkCmdDrawIndexed(commandBuffer,
+                       static_cast<uint32_t>(component.model.indices.size()),
+                       placedConveyors.size(), 0, 0, 0);
     }
 
-    for (auto &component : furnaceStructure.components) {
-      component.model.bind(commandBuffer);
-      component.standardDescriptorSet.bind(commandBuffer, P_PBRCoal, 1, currentImage);
-      vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedFurnaces.size(), 0, 0, 0);
-    }
+    furnaceStructure.components[0].model.bind(commandBuffer);
+    furnaceStructure.components[0].standardDescriptorSet.bind(
+        commandBuffer, P_PBRCoal, 1, currentImage);
+    vkCmdDrawIndexed(commandBuffer,
+                     static_cast<uint32_t>(
+                         furnaceStructure.components[0].model.indices.size()),
+                     placedFurnaces.size(), 0, 0, 0);
+
+    furnaceStructure.components[1].model.bind(commandBuffer);
+    furnaceStructure.components[1].standardDescriptorSet.bind(
+        commandBuffer, P_PBR, 1, currentImage);
+    vkCmdDrawIndexed(commandBuffer,
+                     static_cast<uint32_t>(
+                         furnaceStructure.components[1].model.indices.size()),
+                     placedFurnaces.size(), 0, 0, 0);
+
+    furnaceStructure.components[2].model.bind(commandBuffer);
+    furnaceStructure.components[2].standardDescriptorSet.bind(
+        commandBuffer, P_PBR, 1, currentImage);
+    vkCmdDrawIndexed(commandBuffer,
+                     static_cast<uint32_t>(
+                         furnaceStructure.components[2].model.indices.size()),
+                     placedFurnaces.size(), 0, 0, 0);
 
     if (isPlacing) {
       Structure *selectedStructure = &minerStructure;
