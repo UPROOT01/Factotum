@@ -1285,6 +1285,30 @@ protected:
         std::cout << "Cannot place object here: position is invalid."
                   << std::endl;
       }
+    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS &&
+               app->isPlacing) {
+      glm::vec3 removalPos = app->calculateGroundPlacementPosition(
+          app->cameraPos, app->getLookingVector(), app->gridSize);
+
+      // Find and remove the object at removalPos
+      bool removed = false;
+      for (auto it = app->placedObjects.begin(); it != app->placedObjects.end();
+           ++it) {
+        if (it->position == removalPos) {
+          std::cout << "Removing object of type " << it->type
+                    << " at position: " << it->position.x << ","
+                    << it->position.y << "," << it->position.z << std::endl;
+          app->placedObjects.erase(it);
+          removed = true;
+          app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
+          break; // Assuming only one object can be at a given position
+        }
+      }
+      if (!removed) {
+        std::cout << "No object found at position: " << removalPos.x << ","
+                  << removalPos.y << "," << removalPos.z << " to remove."
+                  << std::endl;
+      }
     }
   }
 };
