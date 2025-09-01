@@ -101,7 +101,7 @@ protected:
   std::vector<VertexDescriptorRef> VDRs;
   std::vector<TechniqueRef> PRs;
 
-  Structure minerStructure, conveyorStructure;
+  Structure minerStructure, conveyorStructure, furnaceStructure;
   bool isPlacing = false;
   glm::mat4 previewTransform;
   float previewRotation = 0.0f;
@@ -112,7 +112,7 @@ protected:
   bool isPlacementValid = true;
 
   // inventory
-  enum InventoryItem { MINER, CONVEYOR_BELT };
+  enum InventoryItem { MINER, CONVEYOR_BELT, FURNACE };
   InventoryItem inventoryItem = MINER;
 
   // to provide textual feedback
@@ -368,6 +368,17 @@ protected:
     conveyorStructure.components[2].model.initFromAsset(
         this, &VDtan, &assetConveyor, "Cube.003", 0, "Cube.003");
 
+    furnaceStructure.components.resize(7);
+    AssetFile assetFurnace;
+    assetFurnace.init("assets/models/furnace/scene.gltf", GLTF);
+    furnaceStructure.components[0].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_body_Furnace_0", 0, "LP_body_Furnace_0");
+    furnaceStructure.components[1].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_coal_Coal_0", 0, "LP_coal_Coal_0");
+    furnaceStructure.components[2].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_lever_Metal_0", 0, "LP_lever_Metal_0");
+    furnaceStructure.components[3].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_chain_Metal_0", 0, "LP_chain_Metal_0");
+    furnaceStructure.components[4].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_Cotl_Metal_0", 0, "LP_Cotl_Metal_0");
+    furnaceStructure.components[5].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_form_Furnace_0", 0, "LP_form_Furnace_0");
+    furnaceStructure.components[6].model.initFromAsset(this, &VDtan, &assetFurnace, "LP_rail_Metal_0", 0, "LP_rail_Metal_0");
+
     PRs.resize(5);
     PRs[0].init("CookTorranceChar",
                 {{&Pchar,
@@ -512,6 +523,22 @@ protected:
         {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
 
+    // init furnace components
+    furnaceStructure.components[0].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
+    furnaceStructure.components[0].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
+    furnaceStructure.components[1].previewDescriptorSet.init(this, &DSLlocalPBRCoal, { SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(), SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler() });
+    furnaceStructure.components[1].standardDescriptorSet.init(this, &DSLlocalPBRCoal, { SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(), SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler() });
+    furnaceStructure.components[2].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[2].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[3].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[3].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[4].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[4].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[5].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
+    furnaceStructure.components[5].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(), SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler() });
+    furnaceStructure.components[6].previewDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+    furnaceStructure.components[6].standardDescriptorSet.init(this, &DSLlocalPBR, { SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(), SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler() });
+
     DSgrid.init(this, &DSLgrid, {});
     DSglobal.init(this, &DSLglobal, {});
     SC.pipelinesAndDescriptorSetsInit();
@@ -537,6 +564,12 @@ protected:
 
     // conveyor cleanup
     for (auto &component : conveyorStructure.components) {
+      component.previewDescriptorSet.cleanup();
+      component.standardDescriptorSet.cleanup();
+    }
+
+    // furnace cleanup
+    for (auto &component : furnaceStructure.components) {
       component.previewDescriptorSet.cleanup();
       component.standardDescriptorSet.cleanup();
     }
@@ -574,6 +607,10 @@ protected:
       component.model.cleanup();
     }
 
+    for (auto &component : furnaceStructure.components) {
+      component.model.cleanup();
+    }
+
     RP.destroy();
 
     SC.localCleanup();
@@ -602,27 +639,33 @@ protected:
     P_PBR.bind(commandBuffer);
     DSglobal.bind(commandBuffer, P_PBR, 0, currentImage);
 
-    std::vector<PlacedObject> placedMiners, placedConveyors;
+    std::vector<PlacedObject> placedMiners, placedConveyors, placedFurnaces;
     for (const auto &obj : placedObjects) {
       if (obj.type == MINER) {
         placedMiners.push_back(obj);
-      } else {
+      } else if (obj.type == CONVEYOR_BELT) {
         placedConveyors.push_back(obj);
+      } else if (obj.type == FURNACE) {
+        placedFurnaces.push_back(obj);
       }
     }
 
     for (auto &component : minerStructure.components) {
-
       component.model.bind(commandBuffer);
       component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1, currentImage);
       vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedMiners.size(), 0, 0, 0);
     }
 
     for (auto &component : conveyorStructure.components) {
-
       component.model.bind(commandBuffer);
       component.standardDescriptorSet.bind(commandBuffer, P_PBR, 1, currentImage);
       vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedConveyors.size(), 0, 0, 0);
+    }
+
+    for (auto &component : furnaceStructure.components) {
+      component.model.bind(commandBuffer);
+      component.standardDescriptorSet.bind(commandBuffer, P_PBRCoal, 1, currentImage);
+      vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(component.model.indices.size()), placedFurnaces.size(), 0, 0, 0);
     }
 
     if (isPlacing) {
@@ -633,6 +676,9 @@ protected:
         break;
       case CONVEYOR_BELT:
         selectedStructure = &conveyorStructure;
+        break;
+      case FURNACE:
+        selectedStructure = &furnaceStructure;
         break;
       }
 
@@ -707,6 +753,25 @@ protected:
       }
     } else {
       if ((curDebounce == GLFW_KEY_2) && debounce) {
+        debounce = false;
+        curDebounce = 0;
+      }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_3)) {
+      if (!debounce) {
+        debounce = true;
+        curDebounce = GLFW_KEY_3;
+
+        inventoryItem = FURNACE;
+        std::cout << "Selected FURNACE\n";
+        if (isPlacing)
+          submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+
+        debug1.y = 1.0 - debug1.y;
+      }
+    } else {
+      if ((curDebounce == GLFW_KEY_3) && debounce) {
         debounce = false;
         curDebounce = 0;
       }
@@ -845,11 +910,14 @@ protected:
 
     std::vector<PlacedObject> placedMiners;
     std::vector<PlacedObject> placedConveyors;
+    std::vector<PlacedObject> placedFurnaces;
     for (const auto &object : placedObjects) {
       if (object.type == MINER) {
         placedMiners.push_back(object);
       } else if (object.type == CONVEYOR_BELT) {
         placedConveyors.push_back(object);
+      } else if (object.type == FURNACE) {
+        placedFurnaces.push_back(object);
       }
     }
 
@@ -872,6 +940,20 @@ protected:
         ubos.mMat[i] =
             glm::translate(glm::mat4(1.f), placedConveyors[i].position) *
             glm::rotate(glm::mat4(1.0f), placedConveyors[i].rotation,
+                        glm::vec3(0.0f, 1.0f, 0.0f)) *
+            component.model.Wm;
+        ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
+        ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
+      }
+
+      component.standardDescriptorSet.map(currentImage, &ubos, 0);
+    }
+
+    for (auto &component : furnaceStructure.components) {
+      for (int i = 0; i < placedFurnaces.size(); i++) {
+        ubos.mMat[i] =
+            glm::translate(glm::mat4(1.f), placedFurnaces[i].position) *
+            glm::rotate(glm::mat4(1.0f), placedFurnaces[i].rotation,
                         glm::vec3(0.0f, 1.0f, 0.0f)) *
             component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
@@ -906,7 +988,19 @@ protected:
           glm::rotate(glm::mat4(1.0f), previewRotation,
                       glm::vec3(0.0f, 1.0f, 0.0f));
 
-      Structure *selectedStructure = (inventoryItem == MINER) ? &minerStructure : &conveyorStructure;
+      Structure *selectedStructure = nullptr;
+
+      switch (inventoryItem) {
+      case MINER:
+        selectedStructure = &minerStructure;
+        break;
+      case CONVEYOR_BELT:
+        selectedStructure = &conveyorStructure;
+        break;
+      case FURNACE:
+        selectedStructure = &furnaceStructure;
+        break;
+      }
 
       for (auto &component : selectedStructure->components) {
         ubosComponent.mMat[0] = previewTransform * component.model.Wm;
@@ -928,6 +1022,9 @@ protected:
       break;
     case CONVEYOR_BELT:
       inventory_str << "Conveyor Belt";
+      break;
+    case FURNACE:
+      inventory_str << "Furnace";
       break;
     default:
       inventory_str << "Unrecognized Item";
