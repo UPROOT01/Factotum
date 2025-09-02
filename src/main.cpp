@@ -146,6 +146,13 @@ protected:
   };
   std::vector<PlacedObject> placedObjects;
 
+  struct Mineral {
+    glm::vec3 position;
+    float remainingAmount = 100.0f; // Example: 100 units per mineral node
+    bool isBeingMined = false;
+  };
+  std::vector<Mineral> minerals; // To store mineral data loaded from scene.json
+
   // Here you set the main application parameters
   void setWindowParameters() {
     // window size, titile and initial background
@@ -479,6 +486,17 @@ protected:
       std::cout << "ERROR LOADING THE SCENE\n";
       exit(0);
     }
+
+    // read minerals positions
+    for (int i = 0; i < 4; i++) {
+      minerals.push_back({
+                glm::vec3(SC.TI[3].I[i+1].Wm[3]),
+                100.0f,
+                false
+      });
+    }
+
+    std::cout << SC.TI[3].I[1].Wm[3][0] << " " << SC.TI[3].I[1].Wm[3][1] << " " << SC.TI[3].I[1].Wm[3][2] << std::endl;
 
     // initializes the textual output
     txt.init(this, windowWidth, windowHeight);
@@ -1030,10 +1048,26 @@ protected:
 
       bool prevState = isPlacementValid;
       isPlacementValid = true;
+
+      // Check for existing placed objects
       for (auto &pos : placedObjects) {
         if (pos.position == placementPos) {
           isPlacementValid = false;
           break;
+        }
+      }
+
+      // Additional check for MINER placement
+      if (isPlacementValid && inventoryItem == MINER) {
+        Mineral *mineralAtPos = getMineralAtPosition(placementPos);
+        if (mineralAtPos == nullptr || mineralAtPos->isBeingMined) {
+          isPlacementValid = false;
+        }
+      } else if (isPlacementValid && inventoryItem != MINER) {
+        // Prevent placing other structures on top of minerals
+        Mineral *mineralAtPos = getMineralAtPosition(placementPos);
+        if (mineralAtPos != nullptr) {
+          isPlacementValid = false;
         }
       }
 
@@ -1260,15 +1294,45 @@ protected:
       app->Pitch = -89.0f;
   }
 
+  Mineral *getMineralAtPosition(glm::vec3 position) {
+    for (auto &mineral : minerals) {
+      if (mineral.position == position) {
+        return &mineral;
+      }
+    }
+    return nullptr;
+  }
+
   static void mouse_button_callback(GLFWwindow *window, int button, int action,
                                     int mods) {
     Factotum *app = (Factotum *)glfwGetWindowUserPointer(window);
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS &&
         app->isPlacing) {
-      if (app->isPlacementValid) {
-        glm::vec3 newPos = app->calculateGroundPlacementPosition(
-            app->cameraPos, app->getLookingVector(), app->gridSize);
+      glm::vec3 newPos = app->calculateGroundPlacementPosition(
+          app->cameraPos, app->getLookingVector(), app->gridSize);
 
+      bool canPlace = app->isPlacementValid; // Initial check for occupied slot
+
+      if (app->inventoryItem == MINER) {
+        Mineral *mineralAtPos = app->getMineralAtPosition(newPos);
+        if (mineralAtPos != nullptr && !mineralAtPos->isBeingMined) {
+          // Can place miner, and it will start mining this mineral
+          canPlace = true;
+          mineralAtPos->isBeingMined = true;
+          std::cout << "Miner placed and started mining at " << newPos.x << ","
+                    << newPos.y << "," << newPos.z << std::endl;
+        } else {
+          // Cannot place miner if no mineral or mineral already being mined
+          canPlace = false;
+          if (mineralAtPos == nullptr) {
+            std::cout << "Cannot place miner: no mineral at this position." << std::endl;
+          } else {
+            std::cout << "Cannot place miner: mineral already being mined." << std::endl;
+          }
+        }
+      }
+
+      if (canPlace) {
         PlacedObject newPlacedObject;
         newPlacedObject.type = app->inventoryItem;
         newPlacedObject.position = newPos;
@@ -1282,8 +1346,7 @@ protected:
                   << ", rotation: " << glm::degrees(newPlacedObject.rotation)
                   << " degrees\n";
       } else {
-        std::cout << "Cannot place object here: position is invalid."
-                  << std::endl;
+        std::cout << "Cannot place object here: position is invalid." << std::endl;
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS &&
                app->isPlacing) {
@@ -1295,6 +1358,16 @@ protected:
       for (auto it = app->placedObjects.begin(); it != app->placedObjects.end();
            ++it) {
         if (it->position == removalPos) {
+          // If removing a miner, set the mineral's isBeingMined to false
+          if (it->type == MINER) {
+            Mineral *mineralAtPos = app->getMineralAtPosition(removalPos);
+            if (mineralAtPos != nullptr) {
+              mineralAtPos->isBeingMined = false;
+              std::cout << "Miner removed, mineral at " << removalPos.x << ","
+                        << removalPos.y << "," << removalPos.z
+                        << " is no longer being mined." << std::endl;
+            }
+          }
           std::cout << "Removing object of type " << it->type
                     << " at position: " << it->position.x << ","
                     << it->position.y << "," << it->position.z << std::endl;
