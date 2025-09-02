@@ -1,0 +1,215 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "TurboSquid Stem Converter v1.0.0"
+  },
+  "accessors": [
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 2434,
+      "type": "VEC3",
+      "max": [
+        0.0885973796248436,
+        0.11937956511974335,
+        0.19999998807907104
+      ],
+      "min": [
+        -0.0885973796248436,
+        -0.11937956511974335,
+        0.0
+      ]
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 2434,
+      "type": "VEC3",
+      "max": [
+        0.9999415278434753,
+        0.9993143677711487,
+        0.9984592199325562
+      ],
+      "min": [
+        -0.9997674226760864,
+        -0.9998015761375427,
+        -0.9998969435691833
+      ]
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 2434,
+      "type": "VEC2",
+      "max": [
+        0.9903782606124878,
+        0.9812008142471313
+      ],
+      "min": [
+        0.009445905685424805,
+        0.007421731948852539
+      ]
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 0,
+      "componentType": 5123,
+      "count": 13338,
+      "type": "SCALAR",
+      "max": [
+        2433.0
+      ],
+      "min": [
+        0.0
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 104564,
+      "uri": "stone_with_quartz.bin"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 29208,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 29208,
+      "byteLength": 29208,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 58416,
+      "byteLength": 19472,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 77888,
+      "byteLength": 26676,
+      "target": 34963
+    }
+  ],
+  "materials": [
+    {
+      "name": "mt_stone_with_quartz",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      },
+      "alphaMode": "OPAQUE",
+      "occlusionTexture": {
+        "index": 1
+      },
+      "normalTexture": {
+        "index": 2
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "stone_with_quartz",
+      "primitives": [
+        {
+          "mode": 4,
+          "material": 0,
+          "indices": 3,
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          }
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ]
+    },
+    {
+      "name": "node",
+      "matrix": [
+        100.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.6292067812173627e-05,
+        -100.0,
+        0.0,
+        0.0,
+        100.0,
+        -1.6292067812173627e-05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "children": [
+        2
+      ]
+    },
+    {
+      "name": "stone_with_quartz",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0,
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "images": [
+    {
+      "uri": "textures/baseColor.jpg"
+    },
+    {
+      "uri": "textures/occlusionRoughnessMetallic.jpg"
+    },
+    {
+      "uri": "textures/normal.png"
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    }
+  ]
+}
