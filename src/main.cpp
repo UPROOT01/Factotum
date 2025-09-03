@@ -276,9 +276,9 @@ protected:
                          VK_SHADER_STAGE_ALL_GRAPHICS,
                          sizeof(GridUniformBufferObject), 1}});
 
-    DSLwireframe.init(
-        this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObjectSimp), 1}});
+    DSLwireframe.init(this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                              VK_SHADER_STAGE_VERTEX_BIT,
+                              sizeof(UniformBufferObjectSimp), 1}});
 
     VDchar.init(
         this, {{0, sizeof(VertexChar), VK_VERTEX_INPUT_RATE_VERTEX}},
@@ -341,7 +341,8 @@ protected:
                {&DSLglobal, &DSLlocalChar});
 
     P_Ground.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-                  "shaders/CookTorranceGround.frag.spv", {&DSLglobal, &DSLlocalSimp});
+                  "shaders/CookTorranceGround.frag.spv",
+                  {&DSLglobal, &DSLlocalSimp});
 
     PskyBox.init(this, &VDskyBox, "shaders/SkyBoxShader.vert.spv",
                  "shaders/SkyBoxShader.frag.spv", {&DSLskyBox});
@@ -350,10 +351,12 @@ protected:
     PskyBox.setPolygonMode(VK_POLYGON_MODE_FILL);
 
     P_PBR.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-               "shaders/CookTorranceObjects.frag.spv", {&DSLglobal, &DSLlocalPBR});
+               "shaders/CookTorranceObjects.frag.spv",
+               {&DSLglobal, &DSLlocalPBR});
 
     P_PBRCoal.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-                   "shaders/CookTorranceEmissive.frag.spv", {&DSLglobal, &DSLlocalPBRCoal});
+                   "shaders/CookTorranceEmissive.frag.spv",
+                   {&DSLglobal, &DSLlocalPBRCoal});
 
     VkPushConstantRange pushConstRange{};
     pushConstRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -427,6 +430,9 @@ protected:
                            GLTF);
     mineralMinedStructure.components[0].model.initFromAsset(
         this, &VDtan, &assetMineralMined, "Asteroid_1b", 0, "Asteroid_1b");
+    mineralMinedStructure.components[0].model.Wm =
+        glm::scale(glm::vec3(0.4)) *
+        mineralMinedStructure.components[0].model.Wm;
 
     metalIngotStructure.components.resize(1);
     AssetFile assetMetalIngot;
@@ -579,50 +585,59 @@ protected:
     }
 
     // init conveyor components
-    conveyorStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
+    conveyorStructure.components[0].previewDescriptorSet.init(
+        this, &DSLwireframe, {});
     conveyorStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe,{});
+    conveyorStructure.components[1].previewDescriptorSet.init(
+        this, &DSLwireframe, {});
     conveyorStructure.components[1].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe,{});
+    conveyorStructure.components[2].previewDescriptorSet.init(
+        this, &DSLwireframe, {});
     conveyorStructure.components[2].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
          SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
 
     // init furnace components
-    furnaceStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
+    furnaceStructure.components[0].previewDescriptorSet.init(this,
+                                                             &DSLwireframe, {});
     furnaceStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBRCoal,
         {SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(),
-         SC.T[37]->getViewAndSampler(), SC.T[38]->getViewAndSampler(), SC.T[17]->getViewAndSampler()});
+         SC.T[37]->getViewAndSampler(), SC.T[38]->getViewAndSampler(),
+         SC.T[17]->getViewAndSampler()});
 
-    furnaceStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe,{});
+    furnaceStructure.components[1].previewDescriptorSet.init(this,
+                                                             &DSLwireframe, {});
     furnaceStructure.components[1].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(),
          SC.T[39]->getViewAndSampler(), SC.T[40]->getViewAndSampler()});
 
-    furnaceStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe,{});
+    furnaceStructure.components[2].previewDescriptorSet.init(this,
+                                                             &DSLwireframe, {});
     furnaceStructure.components[2].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(),
          SC.T[35]->getViewAndSampler(), SC.T[36]->getViewAndSampler()});
 
     // init mineral mined structure
-    mineralMinedStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
+    mineralMinedStructure.components[0].previewDescriptorSet.init(
+        this, &DSLwireframe, {});
     mineralMinedStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[27]->getViewAndSampler(), SC.T[28]->getViewAndSampler(),
          SC.T[29]->getViewAndSampler(), SC.T[30]->getViewAndSampler()});
 
     // init metal ingot structure
-    metalIngotStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
+    metalIngotStructure.components[0].previewDescriptorSet.init(
+        this, &DSLwireframe, {});
     metalIngotStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
@@ -1131,7 +1146,6 @@ protected:
         break;
       ubos.mMat[i] =
           glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
-          glm::scale(glm::vec3(0.4)) *
           mineralMinedStructure.components[0].model.Wm;
       ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
       ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
@@ -1154,7 +1168,7 @@ protected:
     float currentTime = glfwGetTime();
     for (auto &miner : placedObjects) {
       if (miner.type == MINER) {
-        if (currentTime - miner.lastSpawnTime > 20.0f) {
+        if (currentTime - miner.lastSpawnTime > 5.0f) {
           glm::vec3 centerLeftPos =
               getMinerCenterLeftBlock(miner.position, miner.rotation);
 
@@ -1197,7 +1211,8 @@ protected:
       for (auto &cb : placedConveyors) {
         // auto forward = getForwardVector(cb.rotation);
         // auto direction = glm::vec3(-forward.y, 0, forward.x);
-        // std::cout << "Changed direction " << direction.x << ' ' << direction.y
+        // std::cout << "Changed direction " << direction.x << ' ' <<
+        // direction.y
         //           << ' ' << direction.z << " distance "
         //           << glm::distance(mineral.position, cb.position)
         //           << " other distance "
