@@ -108,7 +108,7 @@ protected:
   std::vector<TechniqueRef> PRs;
 
   Structure minerStructure, conveyorStructure, furnaceStructure,
-      mineralMinedStructure, metalIngotStructure;
+      mineralMinedStructure, metalIngotStructure, coalStructure;
   bool isPlacing = false;
   glm::mat4 previewTransform;
   float previewRotation = 0.0f;
@@ -179,6 +179,7 @@ protected:
     glm::vec3 position;
     glm::vec3 direction;
     float spawnTime;
+    int type; // 0 iron, 1 coal
   };
   std::vector<SpawnedMineral> spawnedMinerals;
 
@@ -464,6 +465,15 @@ protected:
         this, &VDtan, &assetMetalIngot, "Ingot_LP_Ingot_0", 0,
         "Ingot_LP_Ingot_0");
 
+    coalStructure.components.resize(1);
+    AssetFile assetCoalStructure;
+    assetCoalStructure.init("assets/models/coal/scene.gltf", GLTF);
+    coalStructure.components[0].model.initFromAsset(
+        this, &VDtan, &assetCoalStructure, "Object_0", 0, "Object_2");
+    coalStructure.components[0].model.Wm =
+        glm::scale(glm::vec3(0.05)) *
+        coalStructure.components[0].model.Wm;
+
     furnaceStructure.components[0].model.Wm =
         glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 1.0f, .0f)) *
         glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
@@ -622,31 +632,39 @@ protected:
     P_PBRCoal.create(&RP);
 
     // init miner components
-    minerStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe, {});
-    minerStructure.components[0].standardDescriptorSet.init(this, &DSLlocalPBR,
-                                                            {SC.T[45]->getViewAndSampler(), SC.T[46]->getViewAndSampler(),
-                                                             SC.T[47]->getViewAndSampler(), SC.T[48]->getViewAndSampler()});
-    minerStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe, {});
-    minerStructure.components[1].standardDescriptorSet.init(this, &DSLlocalPBR,
-                                                            {SC.T[57]->getViewAndSampler(), SC.T[58]->getViewAndSampler(),
-                                                             SC.T[59]->getViewAndSampler(), SC.T[60]->getViewAndSampler()});
-    minerStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe, {});
-    minerStructure.components[2].standardDescriptorSet.init(this, &DSLlocalPBR,
-                                                            {SC.T[53]->getViewAndSampler(), SC.T[54]->getViewAndSampler(),
-                                                             SC.T[55]->getViewAndSampler(), SC.T[56]->getViewAndSampler()});
-    minerStructure.components[3].previewDescriptorSet.init(this, &DSLwireframe, {});
-    minerStructure.components[3].standardDescriptorSet.init(this, &DSLlocalPBR,
-                                                            {SC.T[49]->getViewAndSampler(), SC.T[50]->getViewAndSampler(),
-                                                             SC.T[51]->getViewAndSampler(), SC.T[52]->getViewAndSampler()});
+    minerStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,
+                                                           {});
+    minerStructure.components[0].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[45]->getViewAndSampler(), SC.T[46]->getViewAndSampler(),
+         SC.T[47]->getViewAndSampler(), SC.T[48]->getViewAndSampler()});
+    minerStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe,
+                                                           {});
+    minerStructure.components[1].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[57]->getViewAndSampler(), SC.T[58]->getViewAndSampler(),
+         SC.T[59]->getViewAndSampler(), SC.T[60]->getViewAndSampler()});
+    minerStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe,
+                                                           {});
+    minerStructure.components[2].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[53]->getViewAndSampler(), SC.T[54]->getViewAndSampler(),
+         SC.T[55]->getViewAndSampler(), SC.T[56]->getViewAndSampler()});
+    minerStructure.components[3].previewDescriptorSet.init(this, &DSLwireframe,
+                                                           {});
+    minerStructure.components[3].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[49]->getViewAndSampler(), SC.T[50]->getViewAndSampler(),
+         SC.T[51]->getViewAndSampler(), SC.T[52]->getViewAndSampler()});
 
-//    for (auto &component : minerStructure.components) {
-//      component.previewDescriptorSet.init(this, &DSLwireframe, {});
-//
-//      component.standardDescriptorSet.init(
-//          this, &DSLlocalPBR,
-//          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
-//           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
-//    }
+    //    for (auto &component : minerStructure.components) {
+    //      component.previewDescriptorSet.init(this, &DSLwireframe, {});
+    //
+    //      component.standardDescriptorSet.init(
+    //          this, &DSLlocalPBR,
+    //          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
+    //           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+    //    }
 
     // init conveyor components
     conveyorStructure.components[0].previewDescriptorSet.init(
@@ -706,6 +724,11 @@ protected:
         this, &DSLlocalPBR,
         {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
          SC.T[33]->getViewAndSampler(), SC.T[34]->getViewAndSampler()});
+    coalStructure .components[0].previewDescriptorSet.init(
+        this, &DSLwireframe, {});
+    coalStructure.components[0].standardDescriptorSet.init(
+        this, &DSLlocalChar,
+        {SC.T[61]->getViewAndSampler() });
 
     DSgrid.init(this, &DSLgrid, {});
     DSglobal.init(this, &DSLglobal, {});
@@ -894,11 +917,23 @@ protected:
     mineralMinedStructure.components[0].model.bind(commandBuffer);
     mineralMinedStructure.components[0].standardDescriptorSet.bind(
         commandBuffer, P_PBR, 1, currentImage);
+    int ironOre = 0;
+    int coal = 0;
+
+    for (auto &sm : spawnedMinerals) {
+      if (sm.type == 0) {
+        ironOre++;
+      } else if (sm.type == 1) {
+        coal++;
+      }
+    }
+    std::cout << "current coal comman buffer " << coal << "\n";
     vkCmdDrawIndexed(
         commandBuffer,
         static_cast<uint32_t>(
             mineralMinedStructure.components[0].model.indices.size()),
-        spawnedMinerals.size(), 0, 0, 0);
+        ironOre, 0, 0, 0);
+
 
     metalIngotStructure.components[0].model.bind(commandBuffer);
     metalIngotStructure.components[0].standardDescriptorSet.bind(
@@ -909,6 +944,14 @@ protected:
             metalIngotStructure.components[0].model.indices.size()),
         1, 0, 0, 0);
 
+    Pchar.bind(commandBuffer);
+    coalStructure.components[0].model.bind(commandBuffer);
+    coalStructure.components[0].standardDescriptorSet.bind(commandBuffer, Pchar,
+                                                           1, currentImage);
+    vkCmdDrawIndexed(
+        commandBuffer,
+        static_cast<uint32_t>(coalStructure.components[0].model.indices.size()),
+        coal, 0, 0, 0);
     if (isPlacing) {
       Structure *selectedStructure = &minerStructure;
       switch (inventoryItem) {
@@ -1221,18 +1264,6 @@ protected:
       component.standardDescriptorSet.map(currentImage, &ubos, 0);
     }
 
-    for (int i = 0; i < spawnedMinerals.size(); i++) {
-      if (i >= 100)
-        break;
-      ubos.mMat[i] =
-          glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
-          mineralMinedStructure.components[0].model.Wm;
-      ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
-      ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
-    }
-    mineralMinedStructure.components[0].standardDescriptorSet.map(currentImage,
-                                                                  &ubos, 0);
-
     for (auto &component : metalIngotStructure.components) {
       ubos.mMat[0] =
           glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 0.0f, 0.0f)) *
@@ -1270,6 +1301,7 @@ protected:
             newMineral.position = spawnPos;
             newMineral.direction = direction;
             newMineral.spawnTime = currentTime;
+            newMineral.type = !!miner->isMiningCoal;
 
             spawnedMinerals.push_back(newMineral);
             miner->lastSpawnTime = currentTime;
@@ -1320,7 +1352,11 @@ protected:
           for (auto &pos : positions) {
             if (glm::distance(pos, mineral.position) <= gridSize / 6.f) {
               std::cout << "new stuff" << furnace->ore.size() << "\n";
-              furnace->ore.push_back(currentTime);
+              if (mineral.type == 0) {
+                furnace->ore.push_back(currentTime);
+              } else if (mineral.type == 1) {
+                furnace->coal.push_back(currentTime);
+              }
               valid = false;
               break;
             }
@@ -1331,8 +1367,42 @@ protected:
       if (!valid) {
         spawnedMinerals.erase(spawnedMinerals.begin() + i);
         submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+        std::cout << "called here\n";
       }
     }
+
+    int ci = 0;
+    for (int i = 0; i < spawnedMinerals.size(); i++) {
+      if (ci >= 100)
+        break;
+      if (spawnedMinerals[i].type == 0) {
+        ubos.mMat[ci] =
+            glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
+            mineralMinedStructure.components[0].model.Wm;
+        ubos.mvpMat[ci] = ViewPrj * ubos.mMat[ci];
+        ubos.nMat[ci] = glm::inverse(glm::transpose(ubos.mMat[ci]));
+        ci++;
+      }
+    }
+    mineralMinedStructure.components[0].standardDescriptorSet.map(currentImage,
+                                                                  &ubos, 0);
+
+    int cc = 0;
+    for (int i = 0; i < spawnedMinerals.size(); i++) {
+      if (cc >= 100)
+        break;
+      if (spawnedMinerals[i].type == 1) {
+        ubos.mMat[cc] =
+            glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
+            coalStructure.components[0].model.Wm;
+        ubos.mvpMat[cc] = ViewPrj * ubos.mMat[cc];
+        ubos.nMat[cc] = glm::inverse(glm::transpose(ubos.mMat[cc]));
+        cc++;
+      }
+    }
+    std::cout << "current coal " << cc << "\n";
+    coalStructure.components[0].standardDescriptorSet.map(currentImage, &ubos,
+                                                          0);
 
     if (isPlacing) {
       glm::vec3 placementPos = calculateGroundPlacementPosition(
