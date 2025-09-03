@@ -2,9 +2,9 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(binding = 0, set = 1) uniform UniformBufferObject {
-	mat4 mvpMat[100];
-	mat4 mMat[100];
-	mat4 nMat[100];
+	mat4 mvpMat[200];
+	mat4 mMat[200];
+	mat4 nMat[200];
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

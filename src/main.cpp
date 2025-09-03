@@ -59,9 +59,9 @@ struct UniformBufferObjectChar {
 };
 
 struct UniformBufferObjectSimp {
-  alignas(16) glm::mat4 mvpMat[100];
-  alignas(16) glm::mat4 mMat[100];
-  alignas(16) glm::mat4 nMat[100];
+  alignas(16) glm::mat4 mvpMat[200];
+  alignas(16) glm::mat4 mMat[200];
+  alignas(16) glm::mat4 nMat[200];
 };
 
 struct ComponentModel {
@@ -471,8 +471,7 @@ protected:
     coalStructure.components[0].model.initFromAsset(
         this, &VDtan, &assetCoalStructure, "Object_0", 0, "Object_2");
     coalStructure.components[0].model.Wm =
-        glm::scale(glm::vec3(0.05)) *
-        coalStructure.components[0].model.Wm;
+        glm::scale(glm::vec3(0.05)) * coalStructure.components[0].model.Wm;
 
     furnaceStructure.components[0].model.Wm =
         glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 1.0f, .0f)) *
@@ -603,16 +602,22 @@ protected:
               {0.8f, 0.8f, 0.0f, 1.0f});
 
     // Win screen text
-    txt.print(0.0f, -2.0f, "You Won!", 1000, "CO", true, false, false, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "in xx:xx minutes", 1001, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "Press ESC to exit", 1002, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "You Won!", 1000, "CO", true, false, false,
+              TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 0.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "in xx:xx minutes", 1001, "CO", false, false, true,
+              TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "Press ESC to exit", 1002, "CO", false, false, true,
+              TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
 
     gameStartTime = glfwGetTime();
     txt.print(0.0f, 0.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
               TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, 0.0f, "Needed: 25 Iron", 11, "CO", false, false, true, TAL_CENTER,
-              TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+    txt.print(0.0f, 0.0f, "Needed: 25 Iron", 11, "CO", false, false, true,
+              TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
   }
 
@@ -724,11 +729,10 @@ protected:
         this, &DSLlocalPBR,
         {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
          SC.T[33]->getViewAndSampler(), SC.T[34]->getViewAndSampler()});
-    coalStructure .components[0].previewDescriptorSet.init(
-        this, &DSLwireframe, {});
+    coalStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,
+                                                          {});
     coalStructure.components[0].standardDescriptorSet.init(
-        this, &DSLlocalChar,
-        {SC.T[61]->getViewAndSampler() });
+        this, &DSLlocalChar, {SC.T[61]->getViewAndSampler()});
 
     DSgrid.init(this, &DSLgrid, {});
     DSglobal.init(this, &DSLglobal, {});
@@ -843,9 +847,9 @@ protected:
   // This is the real place where the Command Buffer is written
   void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
     if (isShowingWinScreen) {
-        RP.begin(commandBuffer, currentImage);
-        RP.end(commandBuffer);
-        return;
+      RP.begin(commandBuffer, currentImage);
+      RP.end(commandBuffer);
+      return;
     }
 
     // begin standard pass
@@ -919,12 +923,15 @@ protected:
         commandBuffer, P_PBR, 1, currentImage);
     int ironOre = 0;
     int coal = 0;
+    int ingot = 0;
 
     for (auto &sm : spawnedMinerals) {
       if (sm.type == 0) {
         ironOre++;
       } else if (sm.type == 1) {
         coal++;
+      } else if (sm.type == 2) {
+        ingot++;
       }
     }
     vkCmdDrawIndexed(
@@ -933,7 +940,6 @@ protected:
             mineralMinedStructure.components[0].model.indices.size()),
         ironOre, 0, 0, 0);
 
-
     metalIngotStructure.components[0].model.bind(commandBuffer);
     metalIngotStructure.components[0].standardDescriptorSet.bind(
         commandBuffer, P_PBR, 1, currentImage);
@@ -941,7 +947,7 @@ protected:
         commandBuffer,
         static_cast<uint32_t>(
             metalIngotStructure.components[0].model.indices.size()),
-        1, 0, 0, 0);
+        ingot, 0, 0, 0);
 
     Pchar.bind(commandBuffer);
     coalStructure.components[0].model.bind(commandBuffer);
@@ -1158,7 +1164,8 @@ protected:
     UniformBufferObjectSimp ubos{};
 
     // ground pipeline
-    ubos.mMat[0] = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * SC.TI[1].I[0].Wm;
+    ubos.mMat[0] = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) *
+                   SC.TI[1].I[0].Wm;
     ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
     ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
     SC.TI[1].I[0].DS[0][0]->map(currentImage, &gubo, 0); // Set 0
@@ -1221,6 +1228,43 @@ protected:
       }
     }
 
+    const float fuelConsumption = 5.f;
+    const float meltConsumption = 5.f;
+
+    for (const auto &fur : placedFurnaces) {
+      if (!fur->coal.empty() && !fur->ore.empty()) {
+        fur->coal.front() -= deltaT * fuelConsumption;
+        fur->ore.front() -= deltaT * meltConsumption;
+
+        if (fur->coal.front() <= 0) {
+          fur->coal.erase(fur->coal.begin());
+        }
+        if (fur->ore.front() <= 0) {
+          auto conveyor = getFurnaceDownBlock(fur->position, fur->rotation);
+          for (auto &conv : placedConveyors) {
+            if (conv->position == conveyor) {
+              fur->ore.erase(fur->ore.begin());
+              glm::vec2 forward = getForwardVector(fur->rotation);
+              glm::vec3 direction = glm::vec3(forward.x, 0, forward.y);
+              glm::vec3 spawnPos = conveyor;
+
+              SpawnedMineral newMineral;
+              newMineral.initialPosition = spawnPos;
+              newMineral.position = spawnPos;
+              newMineral.direction = direction;
+              newMineral.spawnTime = 0;
+              newMineral.type = 2;
+
+              spawnedMinerals.push_back(newMineral);
+
+              submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+              std::cout << "Found conveyour!!\n";
+            }
+          }
+        }
+      }
+    }
+
     for (auto &component : minerStructure.components) {
       for (int i = 0; i < placedMiners.size(); i++) {
         ubos.mMat[i] =
@@ -1261,18 +1305,6 @@ protected:
       }
 
       component.standardDescriptorSet.map(currentImage, &ubos, 0);
-    }
-
-    for (auto &component : metalIngotStructure.components) {
-      ubos.mMat[0] =
-          glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 0.0f, 0.0f)) *
-          glm::scale(glm::vec3(8.f)) *
-          metalIngotStructure.components[0].model.Wm;
-      ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
-      ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
-
-      metalIngotStructure.components[0].standardDescriptorSet.map(currentImage,
-                                                                  &ubos, 0);
     }
 
     float currentTime = glfwGetTime();
@@ -1335,10 +1367,10 @@ protected:
         mineral.direction = direction;
 
         if (abs(direction.x) > 0.9f) { // Moving along X
-          mineral.position.z = glm::mix(mineral.position.z, closest_cb->position.z, 0.1f);
+          mineral.position.z = glm::mix(mineral.position.z, closest_cb->position.z, 0.5f * deltaT);
         }
         if (abs(direction.z) > 0.9f) { // Moving along Z
-          mineral.position.x = glm::mix(mineral.position.x, closest_cb->position.x, 0.1f);
+          mineral.position.x = glm::mix(mineral.position.x, closest_cb->position.x, 0.5f * deltaT);
         }
         valid = true;
       }
@@ -1351,15 +1383,20 @@ protected:
             if (glm::distance(pos, mineral.position) <= gridSize / 6.f) {
               std::cout << "new stuff" << furnace->ore.size() << "\n";
               if (mineral.type == 0) {
-                furnace->ore.push_back(currentTime);
+                furnace->ore.push_back(20.f);
               } else if (mineral.type == 1) {
-                furnace->coal.push_back(currentTime);
+                furnace->coal.push_back(20.f);
               }
               valid = false;
               break;
             }
           }
         }
+      }
+
+      if (spawnedMinerals[i].type == 2 && glm::distance(mineral.position, {0.f, 0.f, 0.f}) <= gridSize / 2.0f) {
+        rocketIronCount++;
+        valid = false;
       }
 
       if (!valid) {
@@ -1400,6 +1437,23 @@ protected:
     coalStructure.components[0].standardDescriptorSet.map(currentImage, &ubos,
                                                           0);
 
+    int cn = 0;
+    for (int i = 0; i < spawnedMinerals.size(); i++) {
+      if (cn >= 100)
+        break;
+      if (spawnedMinerals[i].type == 2) {
+        ubos.mMat[cn] =
+            glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
+          glm::translate(glm::mat4(1.f), {0.f, 1.f, 0.f})*
+            glm::scale(glm::vec3(10.f)) *
+            metalIngotStructure.components[0].model.Wm;
+        ubos.mvpMat[cn] = ViewPrj * ubos.mMat[cn];
+        ubos.nMat[cn] = glm::inverse(glm::transpose(ubos.mMat[cn]));
+        cn++;
+      }
+    }
+    metalIngotStructure.components[0].standardDescriptorSet.map(currentImage,
+                                                                &ubos, 0);
     if (isPlacing) {
       glm::vec3 placementPos = calculateGroundPlacementPosition(
           cameraPos, getLookingVector(), gridSize);
@@ -1501,109 +1555,132 @@ protected:
     }
 
     if (isRocketTakingOff) {
-        txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER,
+                TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
+                {0.8f, 0.8f, 0.0f, 1.0f});
     } else {
-        txt.print(0.0f, 0.0f, "+", 2, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
+      txt.print(0.0f, 0.0f, "+", 2, "CO", false, false, true, TAL_CENTER,
+                TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
+                {0.8f, 0.8f, 0.0f, 1.0f});
     }
 
     // Add labels for placed objects
     if (!isRocketTakingOff) {
-    for (int i = 0; i < placedObjects.size(); i++) {
-      auto &obj = placedObjects[i];
-      if (obj->type == FURNACE) {
-        glm::vec3 pos = obj->position;
-        glm::vec4 clipPos =
-            ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
-        glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+      for (int i = 0; i < placedObjects.size(); i++) {
+        auto &obj = placedObjects[i];
+        if (obj->type == FURNACE) {
+          glm::vec3 pos = obj->position;
+          glm::vec4 clipPos =
+              ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
+          glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
 
           if (ndcPos.z < 1.0f && isPlacing) {
-              std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
-              txt.print(ndcPos.x, ndcPos.y, "Miner", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
+            txt.print(ndcPos.x, ndcPos.y, "Miner", 100 + obj->id, "CO", false,
+                      false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           } else {
-              txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true,
+                      TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           }
+        }
       }
-    }
     }
 
     // display inventory information
 
     // Add labels for furnace ore and coal
     if (!isRocketTakingOff) {
-    for (int i = 0; i < placedObjects.size(); i++) {
-      auto& obj = placedObjects[i];
-      if (obj->type == FURNACE) {
+      for (int i = 0; i < placedObjects.size(); i++) {
+        auto &obj = placedObjects[i];
+        if (obj->type == FURNACE) {
           auto furnace = std::dynamic_pointer_cast<PlacedFurnace>(obj);
           glm::vec3 pos = obj->position;
-          glm::vec4 clipPos = ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.5f, 0.0f), 1.0);
+          glm::vec4 clipPos =
+              ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.5f, 0.0f), 1.0);
           glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
 
           if (ndcPos.z < 1.0f && isPlacing) {
-              std::stringstream ss_ore, ss_coal;
-              ss_ore << "Ore: " << furnace->ore.size();
-              ss_coal << "Coal: " << furnace->coal.size();
-              txt.print(ndcPos.x, ndcPos.y - 0.1f, "Furnace", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-              txt.print(ndcPos.x, ndcPos.y, ss_ore.str(), 200 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-              txt.print(ndcPos.x, ndcPos.y, ss_coal.str(), 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            std::stringstream ss_ore, ss_coal;
+            ss_ore << "Ore: " << furnace->ore.size();
+            ss_coal << "Coal: " << furnace->coal.size();
+            txt.print(ndcPos.x, ndcPos.y - 0.1f, "Furnace", 100 + obj->id, "CO",
+                      false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            txt.print(ndcPos.x, ndcPos.y, ss_ore.str(), 200 + obj->id, "CO",
+                      false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            txt.print(ndcPos.x, ndcPos.y, ss_coal.str(), 300 + obj->id, "CO",
+                      false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           } else {
-              txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-              txt.print(0.0f, -2.0f, "", 200 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-              txt.print(0.0f, -2.0f, "", 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true,
+                      TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            txt.print(0.0f, -2.0f, "", 200 + obj->id, "CO", false, false, true,
+                      TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                      {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            txt.print(0.0f, -2.0f, "", 300 + obj->id, "CO", false, false, true,
+                      TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                      {0.0f, 0.0f, 0.0f, 1.0f});
           }
+        }
       }
-    }
     }
     std::stringstream inventory_str;
     if (!isRocketTakingOff) {
-    inventory_str << "Selected item: ";
+      inventory_str << "Selected item: ";
 
-    switch (inventoryItem) {
-    case MINER:
-      inventory_str << "Miner";
-      break;
-    case CONVEYOR_BELT:
-      inventory_str << "Conveyor Belt";
-      break;
-    case FURNACE:
-      inventory_str << "Furnace";
-      break;
-    default:
-      inventory_str << "Unrecognized Item";
-      break;
-    }
+      switch (inventoryItem) {
+      case MINER:
+        inventory_str << "Miner";
+        break;
+      case CONVEYOR_BELT:
+        inventory_str << "Conveyor Belt";
+        break;
+      case FURNACE:
+        inventory_str << "Furnace";
+        break;
+      default:
+        inventory_str << "Unrecognized Item";
+        break;
+      }
 
-    txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO", false, false, false,
-              TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
-              {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO", false, false, false,
+                TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
     }
 
     // ENDGAME LOGIC
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        isRocketTakingOff = true; // just for debugging
+      isRocketTakingOff = true; // just for debugging
     }
 
     if (rocketIronCount >= 25) {
-        isRocketTakingOff = true;
+      isRocketTakingOff = true;
     }
 
     if (isRocketTakingOff) {
-        if (!isGameOver) {
-            isGameOver = true;
-            takeoffTime = glfwGetTime();
-            hideInGameUI();
-        }
-        static float rocketSpeed = 0.0f; // units per second
-        const float rocketAcceleration = 2.5f; // units per second squared
-        rocketSpeed += rocketAcceleration * deltaT;
+      if (!isGameOver) {
+        isGameOver = true;
+        takeoffTime = glfwGetTime();
+        hideInGameUI();
+      }
+      static float rocketSpeed = 0.0f;       // units per second
+      const float rocketAcceleration = 2.5f; // units per second squared
+      rocketSpeed += rocketAcceleration * deltaT;
 
-        SC.TI[3].I[4].Wm = glm::translate(SC.TI[3].I[4].Wm, glm::vec3(0.0f, rocketSpeed * deltaT, 0.0f));
+      SC.TI[3].I[4].Wm = glm::translate(
+          SC.TI[3].I[4].Wm, glm::vec3(0.0f, rocketSpeed * deltaT, 0.0f));
     }
 
-    if (isGameOver && !isShowingWinScreen && (glfwGetTime() - takeoffTime > 5.0f)) {
-        isShowingWinScreen = true;
-        finalGameTime = glfwGetTime() - gameStartTime;
-        RP.properties[0].clearValue = {0.5f, 0.8f, 1.0f, 1.0f};
-        submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+    if (isGameOver && !isShowingWinScreen &&
+        (glfwGetTime() - takeoffTime > 5.0f)) {
+      isShowingWinScreen = true;
+      finalGameTime = glfwGetTime() - gameStartTime;
+      RP.properties[0].clearValue = {0.5f, 0.8f, 1.0f, 1.0f};
+      submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
     }
 
     // ROCKET LABEL
@@ -1611,13 +1688,21 @@ protected:
     glm::vec4 clipPos = ViewPrj * glm::vec4(rocketPos, 1.0);
     glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
     if (ndcPos.z < 1.0f) {
-        txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        std::stringstream ss;
-        ss << "Needed: " << 25 - rocketIronCount << " Iron";
-        txt.print(ndcPos.x, ndcPos.y + 0.1f, ss.str(), 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true,
+                TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+      std::stringstream ss;
+      ss << "Needed: " << 25 - rocketIronCount << " Iron";
+      txt.print(ndcPos.x, ndcPos.y + 0.1f, ss.str(), 11, "CO", false, false,
+                true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
     } else {
-        txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
+                TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER,
+                TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
     }
 
     // updates the FPS
@@ -1642,17 +1727,22 @@ protected:
       }
     }
 
-
     if (isShowingWinScreen) {
-        int minutes = finalGameTime / 60;
-        int seconds = (int)finalGameTime % 60;
-        std::stringstream ss;
-        ss << "in " << std::setfill('0') << std::setw(2) << minutes << ":" << std::setfill('0') << std::setw(2) << seconds << " minutes";
-        
-        txt.print(0.0f, 0.2f, "You Won!", 1000, "CO", true, false, false, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        txt.print(0.0f, 0.0f, ss.str(), 1001, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        txt.print(0.0f, -0.8f, "Press ESC to exit", 1002, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        
+      int minutes = finalGameTime / 60;
+      int seconds = (int)finalGameTime % 60;
+      std::stringstream ss;
+      ss << "in " << std::setfill('0') << std::setw(2) << minutes << ":"
+         << std::setfill('0') << std::setw(2) << seconds << " minutes";
+
+      txt.print(0.0f, 0.2f, "You Won!", 1000, "CO", true, false, false,
+                TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 0.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, 0.0f, ss.str(), 1001, "CO", false, false, true,
+                TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -0.8f, "Press ESC to exit", 1002, "CO", false, false,
+                true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
     }
 
     txt.updateCommandBuffer();
@@ -1716,6 +1806,15 @@ protected:
     occupiedBlocks.push_back(glm::vec3(nextBlockPos.x, 0, nextBlockPos.y));
 
     return occupiedBlocks;
+  }
+
+  glm::vec3 getFurnaceDownBlock(glm::vec3 position, float rotationRadians) {
+    glm::vec2 forward = getForwardVector(rotationRadians);
+
+    float x = position.x + 1.0f * forward.x * gridSize;
+    float z = position.z + 1.0f * forward.y * gridSize;
+
+    return glm::vec3(x, 0, z);
   }
 
   glm::vec3 getMinerCenterLeftBlock(glm::vec3 position, float rotationRadians) {
@@ -1947,6 +2046,14 @@ protected:
           newPlacedObject.type = app->inventoryItem;
           newPlacedObject.position = newPos;
           newPlacedObject.rotation = app->previewRotation;
+            newPlacedObject.coal.push_back(20);
+            newPlacedObject.coal.push_back(20);
+            newPlacedObject.coal.push_back(20);
+            newPlacedObject.coal.push_back(20);
+            newPlacedObject.coal.push_back(20);
+            newPlacedObject.ore.push_back(20);
+            newPlacedObject.ore.push_back(20);
+            newPlacedObject.ore.push_back(20);
           app->placedObjects.push_back(
               std::make_shared<PlacedFurnace>(newPlacedObject));
         } break;
@@ -2051,16 +2158,31 @@ protected:
   }
 
   void hideInGameUI() {
-    txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
     for (int i = 0; i < placedObjects.size(); i++) {
-        txt.print(0.0f, -2.0f, "", 100 + placedObjects[i]->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        txt.print(0.0f, -2.0f, "", 200 + placedObjects[i]->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        txt.print(0.0f, -2.0f, "", 300 + placedObjects[i]->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "", 100 + placedObjects[i]->id, "CO", false, false,
+                true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "", 200 + placedObjects[i]->id, "CO", false, false,
+                true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "", 300 + placedObjects[i]->id, "CO", false, false,
+                true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
     }
-    txt.print(0.0f, -2.0f, "", 3, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "", 1, "CO", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "", 3, "CO", false, false, false, TAL_LEFT, TRH_LEFT,
+              TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "", 1, "CO", false, false, true, TAL_RIGHT,
+              TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f},
+              {0.8f, 0.8f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
+              {0.8f, 0.8f, 0.0f, 1.0f});
   }
 };
 
