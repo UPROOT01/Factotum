@@ -1973,33 +1973,74 @@ protected:
 
       // Find and remove the object at removalPos
       bool removed = false;
-      for (auto it = app->placedObjects.begin(); it != app->placedObjects.end();
-           ++it) {
-        if ((*it)->position == removalPos) {
-          // If removing a miner, set the mineral's isBeingMined to false
-          if ((*it)->type == MINER) {
-            Mineral *mineralAtPos = app->getMineralAtPosition(removalPos);
-            if (mineralAtPos != nullptr) {
-              mineralAtPos->isBeingMined = false;
-              std::cout << "Miner removed, mineral at " << removalPos.x << ","
-                        << removalPos.y << "," << removalPos.z
-                        << " is no longer being mined." << std::endl;
+      for (auto it = app->placedObjects.begin();
+           it != app->placedObjects.end(); ++it) {
+        std::vector<glm::vec3> occupiedBlocks;
+        switch ((*it)->type) {
+        case MINER:
+          occupiedBlocks =
+              app->getMinerOccupiedBlocks((*it)->position, (*it)->rotation);
+          break;
+        case FURNACE:
+          occupiedBlocks =
+              app->getFurnaceOccupiedBlocks((*it)->position, (*it)->rotation);
+          break;
+        case CONVEYOR_BELT:
+          occupiedBlocks.push_back((*it)->position);
+          break;
+        }
+
+        for (const auto &block : occupiedBlocks) {
+          if (glm::distance(block, removalPos) <
+              0.1f) { // Use a small tolerance for float comparison
+            // If removing a miner, set the mineral's isBeingMined to false
+            if ((*it)->type == MINER) {
+              auto miner = std::dynamic_pointer_cast<PlacedMiner>(*it);
+              if (miner->isMiningCoal) {
+                Mineral *coalAtPos = app->getCoalAtPosition((*it)->position);
+                if (coalAtPos != nullptr) {
+                  coalAtPos->isBeingMined = false;
+                  std::cout << "Miner removed, coal at " << (*it)->position.x
+                            << "," << (*it)->position.y << ","
+                            << (*it)->position.z << " is no longer being mined."
+                            << std::endl;
+                }
+              } else {
+                Mineral *mineralAtPos =
+                    app->getMineralAtPosition((*it)->position);
+                if (mineralAtPos != nullptr) {
+                  mineralAtPos->isBeingMined = false;
+                  std::cout << "Miner removed, mineral at "
+                            << (*it)->position.x << "," << (*it)->position.y
+                            << "," << (*it)->position.z
+                            << " is no longer being mined." << std::endl;
+                }
+              }
+            } else if ((*it)->type == FURNACE) {
+              app->txt.print(0.0f, -2.0f, "", 200 + (*it)->id, "CO", false,
+                             false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                             {1.0f, 1.0f, 1.0f, 1.0f},
+                             {0.0f, 0.0f, 0.0f, 1.0f});
+              app->txt.print(0.0f, -2.0f, "", 300 + (*it)->id, "CO", false,
+                             false, true, TAL_CENTER, TRH_CENTER, TRV_TOP,
+                             {1.0f, 1.0f, 1.0f, 1.0f},
+                             {0.0f, 0.0f, 0.0f, 1.0f});
             }
-          } else if ((*it)->type == FURNACE) {
-            app->txt.print(0.0f, -2.0f, "", 200 + (*it)->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-            app->txt.print(0.0f, -2.0f, "", 300 + (*it)->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            std::cout << "Removing object of type " << (*it)->type
+                      << " at position: " << (*it)->position.x << ","
+                      << (*it)->position.y << "," << (*it)->position.z
+                      << std::endl;
+            app->txt.print(0.0f, -2.0f, "", 100 + (*it)->id, "CO", false, false,
+                           true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                           {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            app->placedObjects.erase(it);
+            removed = true;
+            app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
+            break;
           }
-          std::cout << "Removing object of type " << (*it)->type
-                    << " at position: " << (*it)->position.x << ","
-                    << (*it)->position.y << "," << (*it)->position.z
-                    << std::endl;
-          app->txt.print(0.0f, -2.0f, "", 100 + (*it)->id, "CO", false, false,
-                         true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
-                         {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-          app->placedObjects.erase(it);
-          removed = true;
-          app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-          break; // Assuming only one object can be at a given position
+        }
+        if (removed) {
+          break;
         }
       }
       if (!removed) {
