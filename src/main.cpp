@@ -1200,7 +1200,7 @@ protected:
       }
     }
 
-    float mineralSpeed = 0.5f;
+    float mineralSpeed = 1.0f;
     for (int i = 0; i < spawnedMinerals.size(); i++) {
       auto &mineral = spawnedMinerals[i];
       mineral.position =
@@ -1219,13 +1219,13 @@ protected:
         //           << glm::distance(mineral.position + mineral.direction,
         //                            cb.position)
         //           << "\n";
-        if (glm::distance(mineral.position, cb.position) <= mineralSpeed) {
+        if (glm::distance(mineral.position, cb.position) <= gridSize / 6.0f) {
           auto forward = getForwardVector(cb.rotation);
           auto direction = glm::vec3(-forward.y, 0, forward.x);
           mineral.direction = direction;
           valid = true;
           break;
-        } else if (glm::distance(mineral.position + mineral.direction,
+        } else if (glm::distance(mineral.position + mineral.direction * deltaT * mineralSpeed,
                                  cb.position) <= gridSize) {
           valid = true;
           break;
@@ -1508,6 +1508,8 @@ protected:
       Pos.y += MOVE_SPEED * deltaT;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
       Pos.y -= MOVE_SPEED * deltaT;
+
+//    std::cout << "Position: " << Pos.x << ", " << Pos.y << ", " << Pos.z << "\n";
 
     // Game Logic implementation
     // Current Player Position - statc variable make sure its value remain
