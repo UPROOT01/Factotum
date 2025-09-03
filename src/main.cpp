@@ -1701,22 +1701,24 @@ protected:
     glm::vec3 rocketPos = glm::vec3(SC.TI[3].I[4].Wm[3]);
     glm::vec4 clipPos = ViewPrj * glm::vec4(rocketPos, 1.0);
     glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
-    if (ndcPos.z < 1.0f) {
-      txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true,
-                TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
-      std::stringstream ss;
-      ss << "Needed: " << 25 - rocketIronCount << " Iron";
-      txt.print(ndcPos.x, ndcPos.y + 0.1f, ss.str(), 11, "CO", false, false,
-                true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
-    } else {
-      txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
-                TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
-      txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER,
-                TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
+    if (!isRocketTakingOff) {
+      if (ndcPos.z < 1.0f) {
+        txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true,
+                  TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                  {0.0f, 0.0f, 0.0f, 1.0f});
+        std::stringstream ss;
+        ss << "Needed: " << 25 - rocketIronCount << " Iron";
+        txt.print(ndcPos.x, ndcPos.y + 0.1f, ss.str(), 11, "CO", false, false,
+                  true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                  {0.0f, 0.0f, 0.0f, 1.0f});
+      } else {
+        txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
+                  TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                  {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER,
+                  TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                  {0.0f, 0.0f, 0.0f, 1.0f});
+      }
     }
 
     // updates the FPS
@@ -1864,6 +1866,40 @@ protected:
     }
     return glm::vec3(
         0.0f); // Return a default position if no valid intersection
+  }
+
+  void hideInGameUI() {
+    // FPS counter
+    txt.print(0.0f, -2.0f, "", 1, "CO", false, false, true, TAL_RIGHT,
+              TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f},
+              {0.8f, 0.8f, 0.0f, 1.0f});
+    // Crosshair
+    txt.print(0.0f, -2.0f, "", 2, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
+              {0.8f, 0.8f, 0.0f, 1.0f});
+    // Selected item
+    txt.print(0.0f, -2.0f, "", 3, "CO", false, false, false, TAL_LEFT, TRH_LEFT,
+              TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    // Rocket label
+    txt.print(0.0f, -2.0f, "", 10, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
+    // Rocket needed iron
+    txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
+
+    for (const auto &obj : placedObjects) {
+      txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true,
+                TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "", 200 + obj->id, "CO", false, false, true,
+                TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "", 300 + obj->id, "CO", false, false, true,
+                TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
+    }
   }
 
   float GameLogic() {
@@ -2169,34 +2205,6 @@ protected:
                   << std::endl;
       }
     }
-  }
-
-  void hideInGameUI() {
-    txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
-              TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
-              {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER,
-              TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
-              {0.0f, 0.0f, 0.0f, 1.0f});
-    for (int i = 0; i < placedObjects.size(); i++) {
-      txt.print(0.0f, -2.0f, "", 100 + placedObjects[i]->id, "CO", false, false,
-                true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
-                {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-      txt.print(0.0f, -2.0f, "", 200 + placedObjects[i]->id, "CO", false, false,
-                true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
-                {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-      txt.print(0.0f, -2.0f, "", 300 + placedObjects[i]->id, "CO", false, false,
-                true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
-    }
-    txt.print(0.0f, -2.0f, "", 3, "CO", false, false, false, TAL_LEFT, TRH_LEFT,
-              TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "", 1, "CO", false, false, true, TAL_RIGHT,
-              TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f},
-              {0.8f, 0.8f, 0.0f, 1.0f});
-    txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER,
-              TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
-              {0.8f, 0.8f, 0.0f, 1.0f});
   }
 };
 
