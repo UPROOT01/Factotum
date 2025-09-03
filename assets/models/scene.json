@@ -60,7 +60,23 @@
 		{"id": "rocket_basecolor", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_BaseColor.png", "format": "D"},
 		{"id": "rocket_normal", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Normal.png", "format": "D"},
 		{"id": "rocket_metallic", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Metallic.png", "format": "D"},
-		{"id": "rocket_roughness", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Roughness.png", "format": "D"}
+		{"id": "rocket_roughness", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Roughness.png", "format": "D"},
+		{"id": "miner_body_basecolor", "texture": "assets/models/miner/textures/steelplate1_albedo.png", "format": "D"},
+		{"id": "miner_body_normal", "texture": "assets/models/miner/textures/steelplate1_normal-ogl.png", "format": "D"},
+		{"id": "miner_body_metallic", "texture": "assets/models/miner/textures/steelplate1_metallic.png", "format": "D"},
+		{"id": "miner_body_roughness", "texture": "assets/models/miner/textures/steelplate1_roughness.png", "format": "D"},
+		{"id": "miner_cylinder_basecolor", "texture": "assets/models/miner/textures/space-cruiser-panels_albedo.png", "format": "D"},
+		{"id": "miner_cylinder_normal", "texture": "assets/models/miner/textures/space-cruiser-panels_normal-ogl.png", "format": "D"},
+		{"id": "miner_cylinder_metallic", "texture": "assets/models/miner/textures/space-cruiser-panels_metallic.png", "format": "D"},
+		{"id": "miner_cylinder_roughness", "texture": "assets/models/miner/textures/space-cruiser-panels_roughness.png", "format": "D"},
+		{"id": "miner_cube_basecolor", "texture": "assets/models/miner/textures/oily-tubework_albedo.png", "format": "D"},
+		{"id": "miner_cube_normal", "texture": "assets/models/miner/textures/oily-tubework_normal-ogl.png", "format": "D"},
+		{"id": "miner_cube_metallic", "texture": "assets/models/miner/textures/oily-tubework_metallic.png", "format": "D"},
+		{"id": "miner_cube_roughness", "texture": "assets/models/miner/textures/oily-tubework_roughness.png", "format": "D"},
+		{"id": "miner_drill_basecolor", "texture": "assets/models/miner/textures/rusted-steel_albedo.png", "format": "D"},
+		{"id": "miner_drill_normal", "texture": "assets/models/miner/textures/rusted-steel_normal-ogl.png", "format": "D"},
+		{"id": "miner_drill_metallic", "texture": "assets/models/miner/textures/rusted-steel_metallic.png", "format": "D"},
+		{"id": "miner_drill_roughness", "texture": "assets/models/miner/textures/rusted-steel_roughness.png", "format": "D"}
 	],
 	"instances": [
 		{"technique": "CookTorrance", "elements": [

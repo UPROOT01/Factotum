@@ -390,15 +390,15 @@ protected:
     minerStructure.components.resize(4);
 
     AssetFile assetMiner;
-    assetMiner.init("assets/models/Miner.gltf", GLTF);
+    assetMiner.init("assets/models/miner/miner.gltf", GLTF);
     minerStructure.components[0].model.initFromAsset(this, &VDtan, &assetMiner,
-                                                     "Cube", 0, "Cube");
+                                                     "Cube.006", 0, "Cube.006");
     minerStructure.components[1].model.initFromAsset(this, &VDtan, &assetMiner,
                                                      "Cone", 0, "Cone");
     minerStructure.components[2].model.initFromAsset(this, &VDtan, &assetMiner,
-                                                     "Cylinder", 0, "Cylinder");
+                                                     "Cube", 0, "Cube");
     minerStructure.components[3].model.initFromAsset(this, &VDtan, &assetMiner,
-                                                     "Pyramid", 0, "Pyramid");
+                                                     "Cylinder", 0, "Cylinder");
 
     conveyorStructure.components.resize(3);
     AssetFile assetConveyor;
@@ -591,14 +591,32 @@ protected:
     Pgrid.create(&RP);
     P_PBRCoal.create(&RP);
 
-    for (auto &component : minerStructure.components) {
-      component.previewDescriptorSet.init(this, &DSLwireframe, {});
+    // init miner components
+    minerStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe, {});
+    minerStructure.components[0].standardDescriptorSet.init(this, &DSLlocalPBR,
+                                                            {SC.T[45]->getViewAndSampler(), SC.T[46]->getViewAndSampler(),
+                                                             SC.T[47]->getViewAndSampler(), SC.T[48]->getViewAndSampler()});
+    minerStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe, {});
+    minerStructure.components[1].standardDescriptorSet.init(this, &DSLlocalPBR,
+                                                            {SC.T[57]->getViewAndSampler(), SC.T[58]->getViewAndSampler(),
+                                                             SC.T[59]->getViewAndSampler(), SC.T[60]->getViewAndSampler()});
+    minerStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe, {});
+    minerStructure.components[2].standardDescriptorSet.init(this, &DSLlocalPBR,
+                                                            {SC.T[53]->getViewAndSampler(), SC.T[54]->getViewAndSampler(),
+                                                             SC.T[55]->getViewAndSampler(), SC.T[56]->getViewAndSampler()});
+    minerStructure.components[3].previewDescriptorSet.init(this, &DSLwireframe, {});
+    minerStructure.components[3].standardDescriptorSet.init(this, &DSLlocalPBR,
+                                                            {SC.T[49]->getViewAndSampler(), SC.T[50]->getViewAndSampler(),
+                                                             SC.T[51]->getViewAndSampler(), SC.T[52]->getViewAndSampler()});
 
-      component.standardDescriptorSet.init(
-          this, &DSLlocalPBR,
-          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
-           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
-    }
+//    for (auto &component : minerStructure.components) {
+//      component.previewDescriptorSet.init(this, &DSLwireframe, {});
+//
+//      component.standardDescriptorSet.init(
+//          this, &DSLlocalPBR,
+//          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
+//           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+//    }
 
     // init conveyor components
     conveyorStructure.components[0].previewDescriptorSet.init(
