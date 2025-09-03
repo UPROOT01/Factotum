@@ -4,6 +4,7 @@
 #include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 #include <json.hpp>
@@ -147,9 +148,19 @@ protected:
     InventoryItem type;
     glm::vec3 position;
     float rotation;
-    float lastSpawnTime = 0.0f;
+    virtual ~PlacedObject() = default; // Add this line
   };
-  std::vector<PlacedObject> placedObjects;
+  struct PlacedMiner : PlacedObject {
+    float lastSpawnTime = 0.0;
+  };
+
+  struct PlacedConveyor : PlacedObject {};
+  struct PlacedFurnace : PlacedObject {
+    std::vector<float> coal;
+    std::vector<float> ore;
+  };
+
+  std::vector<std::shared_ptr<PlacedObject>> placedObjects;
 
   struct SpawnedMineral {
     glm::vec3 initialPosition;
@@ -764,13 +775,14 @@ protected:
     P_PBR.bind(commandBuffer);
     DSglobal.bind(commandBuffer, P_PBR, 0, currentImage);
 
-    std::vector<PlacedObject> placedMiners, placedConveyors, placedFurnaces;
+    std::vector<std::shared_ptr<PlacedObject>> placedMiners, placedConveyors,
+        placedFurnaces;
     for (const auto &obj : placedObjects) {
-      if (obj.type == MINER) {
+      if (obj->type == MINER) {
         placedMiners.push_back(obj);
-      } else if (obj.type == CONVEYOR_BELT) {
+      } else if (obj->type == CONVEYOR_BELT) {
         placedConveyors.push_back(obj);
-      } else if (obj.type == FURNACE) {
+      } else if (obj->type == FURNACE) {
         placedFurnaces.push_back(obj);
       }
     }
@@ -1086,24 +1098,25 @@ protected:
       SC.TI[4].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
     }
 
-    std::vector<PlacedObject> placedMiners;
-    std::vector<PlacedObject> placedConveyors;
-    std::vector<PlacedObject> placedFurnaces;
+    std::vector<std::shared_ptr<PlacedMiner>> placedMiners;
+    std::vector<std::shared_ptr<PlacedObject>> placedConveyors;
+    std::vector<std::shared_ptr<PlacedFurnace>> placedFurnaces;
     for (const auto &object : placedObjects) {
-      if (object.type == MINER) {
-        placedMiners.push_back(object);
-      } else if (object.type == CONVEYOR_BELT) {
+      if (object->type == MINER) {
+        placedMiners.push_back(std::dynamic_pointer_cast<PlacedMiner>(object));
+      } else if (object->type == CONVEYOR_BELT) {
         placedConveyors.push_back(object);
-      } else if (object.type == FURNACE) {
-        placedFurnaces.push_back(object);
+      } else if (object->type == FURNACE) {
+        placedFurnaces.push_back(
+            std::dynamic_pointer_cast<PlacedFurnace>(object));
       }
     }
 
     for (auto &component : minerStructure.components) {
       for (int i = 0; i < placedMiners.size(); i++) {
         ubos.mMat[i] =
-            glm::translate(glm::mat4(1.f), placedMiners[i].position) *
-            glm::rotate(glm::mat4(1.0f), placedMiners[i].rotation,
+            glm::translate(glm::mat4(1.f), placedMiners[i]->position) *
+            glm::rotate(glm::mat4(1.0f), placedMiners[i]->rotation,
                         glm::vec3(0.0f, 1.0f, 0.0f)) *
             component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
@@ -1116,8 +1129,8 @@ protected:
     for (auto &component : conveyorStructure.components) {
       for (int i = 0; i < placedConveyors.size(); i++) {
         ubos.mMat[i] =
-            glm::translate(glm::mat4(1.f), placedConveyors[i].position) *
-            glm::rotate(glm::mat4(1.0f), placedConveyors[i].rotation,
+            glm::translate(glm::mat4(1.f), placedConveyors[i]->position) *
+            glm::rotate(glm::mat4(1.0f), placedConveyors[i]->rotation,
                         glm::vec3(0.0f, 1.0f, 0.0f)) *
             component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
@@ -1130,8 +1143,8 @@ protected:
     for (auto &component : furnaceStructure.components) {
       for (int i = 0; i < placedFurnaces.size(); i++) {
         ubos.mMat[i] =
-            glm::translate(glm::mat4(1.f), placedFurnaces[i].position) *
-            glm::rotate(glm::mat4(1.0f), placedFurnaces[i].rotation,
+            glm::translate(glm::mat4(1.f), placedFurnaces[i]->position) *
+            glm::rotate(glm::mat4(1.0f), placedFurnaces[i]->rotation,
                         glm::vec3(0.0f, 1.0f, 0.0f)) *
             component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
@@ -1166,22 +1179,22 @@ protected:
     }
 
     float currentTime = glfwGetTime();
-    for (auto &miner : placedObjects) {
-      if (miner.type == MINER) {
-        if (currentTime - miner.lastSpawnTime > 5.0f) {
+    for (auto &miner : placedMiners) {
+      if (miner->type == MINER) {
+        if (currentTime - miner->lastSpawnTime > 5.0f) {
           glm::vec3 centerLeftPos =
-              getMinerCenterLeftBlock(miner.position, miner.rotation);
+              getMinerCenterLeftBlock(miner->position, miner->rotation);
 
           bool conveyorFound = false;
           for (const auto &obj : placedObjects) {
-            if (obj.type == CONVEYOR_BELT && obj.position == centerLeftPos) {
+            if (obj->type == CONVEYOR_BELT && obj->position == centerLeftPos) {
               conveyorFound = true;
               break;
             }
           }
 
           if (conveyorFound) {
-            glm::vec2 forward = getForwardVector(miner.rotation);
+            glm::vec2 forward = getForwardVector(miner->rotation);
             glm::vec3 direction = glm::vec3(-forward.y, 0, forward.x);
             glm::vec3 spawnPos = centerLeftPos - direction * gridSize;
 
@@ -1192,7 +1205,7 @@ protected:
             newMineral.spawnTime = currentTime;
 
             spawnedMinerals.push_back(newMineral);
-            miner.lastSpawnTime = currentTime;
+            miner->lastSpawnTime = currentTime;
 
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
           }
@@ -1219,16 +1232,32 @@ protected:
         //           << glm::distance(mineral.position + mineral.direction,
         //                            cb.position)
         //           << "\n";
-        if (glm::distance(mineral.position, cb.position) <= gridSize / 6.0f) {
-          auto forward = getForwardVector(cb.rotation);
+        if (glm::distance(mineral.position, cb->position) <= gridSize / 6.0f) {
+          auto forward = getForwardVector(cb->rotation);
           auto direction = glm::vec3(-forward.y, 0, forward.x);
           mineral.direction = direction;
           valid = true;
           break;
-        } else if (glm::distance(mineral.position + mineral.direction * deltaT * mineralSpeed,
-                                 cb.position) <= gridSize) {
+        } else if (glm::distance(mineral.position +
+                                     mineral.direction * deltaT * mineralSpeed,
+                                 cb->position) <= gridSize) {
           valid = true;
           break;
+        }
+      }
+
+      for (auto &furnace : placedFurnaces) {
+        if (valid) {
+          auto positions =
+              getFurnaceOccupiedBlocks(furnace->position, furnace->rotation);
+          for (auto &pos : positions) {
+            if (glm::distance(pos, mineral.position) <= gridSize / 6.f) {
+              std::cout << "new stuff" << furnace->ore.size() << "\n";
+              furnace->ore.push_back(currentTime);
+              valid = false;
+              break;
+            }
+          }
         }
       }
 
@@ -1248,15 +1277,15 @@ protected:
       // Check for existing placed objects
       for (auto &pos : placedObjects) {
         std::vector<glm::vec3> positions;
-        switch (pos.type) {
+        switch (pos->type) {
         case MINER:
-          positions = getMinerOccupiedBlocks(pos.position, pos.rotation);
+          positions = getMinerOccupiedBlocks(pos->position, pos->rotation);
           break;
         case FURNACE:
-          positions = getFurnaceOccupiedBlocks(pos.position, pos.rotation);
+          positions = getFurnaceOccupiedBlocks(pos->position, pos->rotation);
           break;
         case CONVEYOR_BELT:
-          positions = {pos.position};
+          positions = {pos->position};
         }
 
         std::vector<glm::vec3> placingPositions;
@@ -1509,7 +1538,8 @@ protected:
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
       Pos.y -= MOVE_SPEED * deltaT;
 
-//    std::cout << "Position: " << Pos.x << ", " << Pos.y << ", " << Pos.z << "\n";
+    //    std::cout << "Position: " << Pos.x << ", " << Pos.y << ", " << Pos.z
+    //    << "\n";
 
     // Game Logic implementation
     // Current Player Position - statc variable make sure its value remain
@@ -1636,18 +1666,33 @@ protected:
       }
 
       if (canPlace) {
-        PlacedObject newPlacedObject;
-        newPlacedObject.type = app->inventoryItem;
-        newPlacedObject.position = newPos;
-        newPlacedObject.rotation = app->previewRotation;
-        app->placedObjects.push_back(newPlacedObject);
+        switch (app->inventoryItem) {
+        case MINER: {
+          PlacedMiner newPlacedObject;
+          newPlacedObject.type = app->inventoryItem;
+          newPlacedObject.position = newPos;
+          newPlacedObject.rotation = app->previewRotation;
+          app->placedObjects.push_back(
+              std::make_shared<PlacedMiner>(newPlacedObject));
+        } break;
+        case FURNACE: {
+          PlacedFurnace newPlacedObject;
+          newPlacedObject.type = app->inventoryItem;
+          newPlacedObject.position = newPos;
+          newPlacedObject.rotation = app->previewRotation;
+          app->placedObjects.push_back(
+              std::make_shared<PlacedFurnace>(newPlacedObject));
+        } break;
+        case CONVEYOR_BELT: {
+          PlacedConveyor newPlacedObject;
+          newPlacedObject.type = app->inventoryItem;
+          newPlacedObject.position = newPos;
+          newPlacedObject.rotation = app->previewRotation;
+          app->placedObjects.push_back(
+              std::make_shared<PlacedConveyor>(newPlacedObject));
+        } break;
+        }
         app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
-        std::cout << "Placed a new object of type " << app->inventoryItem
-                  << " at position: " << newPlacedObject.position.x << ","
-                  << newPlacedObject.position.y << ","
-                  << newPlacedObject.position.z
-                  << ", rotation: " << glm::degrees(newPlacedObject.rotation)
-                  << " degrees\n";
       } else {
         std::cout << "Cannot place object here: position is invalid."
                   << std::endl;
@@ -1661,9 +1706,9 @@ protected:
       bool removed = false;
       for (auto it = app->placedObjects.begin(); it != app->placedObjects.end();
            ++it) {
-        if (it->position == removalPos) {
+        if ((*it)->position == removalPos) {
           // If removing a miner, set the mineral's isBeingMined to false
-          if (it->type == MINER) {
+          if ((*it)->type == MINER) {
             Mineral *mineralAtPos = app->getMineralAtPosition(removalPos);
             if (mineralAtPos != nullptr) {
               mineralAtPos->isBeingMined = false;
@@ -1672,9 +1717,10 @@ protected:
                         << " is no longer being mined." << std::endl;
             }
           }
-          std::cout << "Removing object of type " << it->type
-                    << " at position: " << it->position.x << ","
-                    << it->position.y << "," << it->position.z << std::endl;
+          std::cout << "Removing object of type " << (*it)->type
+                    << " at position: " << (*it)->position.x << ","
+                    << (*it)->position.y << "," << (*it)->position.z
+                    << std::endl;
           app->placedObjects.erase(it);
           removed = true;
           app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);
