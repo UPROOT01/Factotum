@@ -1319,29 +1319,28 @@ protected:
 
       bool valid = false;
 
+      std::shared_ptr<PlacedObject> closest_cb = nullptr;
+      float min_dist = 10000.0f;
       for (auto &cb : placedConveyors) {
-        // auto forward = getForwardVector(cb.rotation);
-        // auto direction = glm::vec3(-forward.y, 0, forward.x);
-        // std::cout << "Changed direction " << direction.x << ' ' <<
-        // direction.y
-        //           << ' ' << direction.z << " distance "
-        //           << glm::distance(mineral.position, cb.position)
-        //           << " other distance "
-        //           << glm::distance(mineral.position + mineral.direction,
-        //                            cb.position)
-        //           << "\n";
-        if (glm::distance(mineral.position, cb->position) <= gridSize / 6.0f) {
-          auto forward = getForwardVector(cb->rotation);
-          auto direction = glm::vec3(-forward.y, 0, forward.x);
-          mineral.direction = direction;
-          valid = true;
-          break;
-        } else if (glm::distance(mineral.position +
-                                     mineral.direction * deltaT * mineralSpeed,
-                                 cb->position) <= gridSize) {
-          valid = true;
-          break;
+        float dist = glm::distance(mineral.position, cb->position);
+        if (dist < min_dist) {
+          min_dist = dist;
+          closest_cb = cb;
         }
+      }
+
+      if (closest_cb && min_dist < gridSize) {
+        auto forward = getForwardVector(closest_cb->rotation);
+        auto direction = glm::vec3(-forward.y, 0, forward.x);
+        mineral.direction = direction;
+
+        if (abs(direction.x) > 0.9f) { // Moving along X
+          mineral.position.z = glm::mix(mineral.position.z, closest_cb->position.z, 0.1f);
+        }
+        if (abs(direction.z) > 0.9f) { // Moving along Z
+          mineral.position.x = glm::mix(mineral.position.x, closest_cb->position.x, 0.1f);
+        }
+        valid = true;
       }
 
       for (auto &furnace : placedFurnaces) {
