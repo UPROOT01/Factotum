@@ -1673,10 +1673,10 @@ protected:
                 {0.0f, 0.0f, 0.0f, 1.0f});
     }
 
-    // ENDGAME LOGIC
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-      isRocketTakingOff = true; // just for debugging
-    }
+    // // ENDGAME LOGIC
+    // if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    //   isRocketTakingOff = true; // just for debugging
+    // }
 
     if (rocketIronCount >= 25) {
       isRocketTakingOff = true;
@@ -1940,7 +1940,7 @@ protected:
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
       Pos.y += MOVE_SPEED * deltaT;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-      Pos.y -= MOVE_SPEED * deltaT;
+      Pos.y = fmax(Pos.y - MOVE_SPEED * deltaT, 2.f);
 
     //    std::cout << "Position: " << Pos.x << ", " << Pos.y << ", " << Pos.z
     //    << "\n";
