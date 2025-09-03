@@ -1,5 +1,6 @@
 // This has been adapted from the Vulkan tutorial
 #include <cstdlib>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
@@ -153,6 +154,7 @@ protected:
   };
   struct PlacedMiner : PlacedObject {
     float lastSpawnTime = 0.0;
+    bool isMiningCoal;
   };
 
   struct PlacedConveyor : PlacedObject {};
@@ -178,6 +180,7 @@ protected:
     bool isBeingMined = false;
   };
   std::vector<Mineral> minerals; // To store mineral data loaded from scene.json
+  std::vector<Mineral> coal;     // To store mineral data loaded from scene.json
 
   // Here you set the main application parameters
   void setWindowParameters() {
@@ -229,7 +232,7 @@ protected:
                // second element : the type of element (buffer or texture)
                // third  element : the pipeline stage where it will be used
                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObjectChar), 1},
+                VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObjectSimp), 1},
                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}});
 
@@ -349,9 +352,8 @@ protected:
     // The last array, is a vector of pointer to the layouts of the sets that
     // will be used in this pipeline. The first element will be set 0, and so
     // on..
-    Pchar.init(this, &VDchar, "shaders/SimplePosNormUvTan.vert.spv",
-               "shaders/CookTorrance.frag.spv",
-               {&DSLglobal, &DSLlocalChar});
+    Pchar.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
+               "shaders/CookTorrance.frag.spv", {&DSLglobal, &DSLlocalChar});
 
     P_Ground.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
                   "shaders/CookTorranceGround.frag.spv",
@@ -486,7 +488,7 @@ protected:
                        /*t0*/ {true, 0, {}} // index 0 of the "texture" field in
                                             // the json file
                    }}}},
-                /*TotalNtextures*/ 1, &VDchar);
+                /*TotalNtextures*/ 1, &VDtan);
     PRs[1].init("CookTorranceGround",
                 {{&P_Ground,
                   {// Pipeline and DSL for the first pass
@@ -558,6 +560,16 @@ protected:
       minerals.push_back({glm::vec3(SC.TI[3].I[i].Wm[3]), 100.0f, false});
     }
 
+    for (int i = 0; i < 2; i++) {
+      auto temp = glm::vec3(SC.TI[0].I[i].Wm[3]);
+      temp[1] = 0.f;
+      coal.push_back({temp, 100.0f, false});
+    }
+    for (int i = 0; i < 2; i++) {
+      SC.TI[0].I[i].Wm[3] =
+          glm::translate(glm::mat4(1.f), glm::vec3(-0.f, 0.f, -1.5f)) *
+          SC.TI[0].I[i].Wm[3];
+    }
     // initializes the textual output
     txt.init(this, windowWidth, windowHeight);
 
@@ -1110,6 +1122,15 @@ protected:
       SC.TI[3].I[instanceId].DS[0][0]->map(currentImage, &gubo, 0); // Set 0
       SC.TI[3].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
     }
+    // PBR char
+    for (instanceId = 0; instanceId < SC.TI[0].InstanceCount; instanceId++) {
+      ubos.mMat[0] = SC.TI[0].I[instanceId].Wm;
+      ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
+      ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
+
+      SC.TI[0].I[instanceId].DS[0][0]->map(currentImage, &gubo, 0); // Set 0
+      SC.TI[0].I[instanceId].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
+    }
 
     // PBR_coal objects
     for (instanceId = 0; instanceId < SC.TI[4].InstanceCount; instanceId++) {
@@ -1340,13 +1361,16 @@ protected:
       // Additional check for MINER placement
       if (isPlacementValid && inventoryItem == MINER) {
         Mineral *mineralAtPos = getMineralAtPosition(placementPos);
-        if (mineralAtPos == nullptr || mineralAtPos->isBeingMined) {
+        Mineral *coalAtPos = getCoalAtPosition(placementPos);
+        if ((mineralAtPos == nullptr || mineralAtPos->isBeingMined) &&
+            (coalAtPos == nullptr || coalAtPos->isBeingMined)) {
           isPlacementValid = false;
         }
       } else if (isPlacementValid && inventoryItem != MINER) {
         // Prevent placing other structures on top of minerals
         Mineral *mineralAtPos = getMineralAtPosition(placementPos);
-        if (mineralAtPos != nullptr) {
+        Mineral *coalAtPos = getCoalAtPosition(placementPos);
+        if (mineralAtPos != nullptr && coalAtPos != nullptr) {
           isPlacementValid = false;
         }
       }
@@ -1389,18 +1413,23 @@ protected:
 
     // Add labels for placed objects
     for (int i = 0; i < placedObjects.size(); i++) {
-      auto& obj = placedObjects[i];
+      auto &obj = placedObjects[i];
       if (obj->type == MINER || obj->type == FURNACE) {
-          glm::vec3 pos = obj->position;
-          glm::vec4 clipPos = ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
-          glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+        glm::vec3 pos = obj->position;
+        glm::vec4 clipPos =
+            ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
+        glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
 
-          if (ndcPos.z < 1.0f && isPlacing) {
-              std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
-              txt.print(ndcPos.x, ndcPos.y, label, 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-          } else {
-              txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-          }
+        if (ndcPos.z < 1.0f && isPlacing) {
+          std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
+          txt.print(ndcPos.x, ndcPos.y, label, 100 + obj->id, "CO", false,
+                    false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                    {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        } else {
+          txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true,
+                    TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                    {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        }
       }
     }
 
@@ -1432,9 +1461,13 @@ protected:
     glm::vec4 clipPos = ViewPrj * glm::vec4(rocketPos, 1.0);
     glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
     if (ndcPos.z < 1.0f) {
-        txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true,
+                TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
     } else {
-        txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+      txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
+                TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+                {0.0f, 0.0f, 0.0f, 1.0f});
     }
 
     // updates the FPS
@@ -1684,6 +1717,14 @@ protected:
     return nullptr;
   }
 
+  Mineral *getCoalAtPosition(glm::vec3 position) {
+    for (auto &mineral : coal) {
+      if (mineral.position == position) {
+        return &mineral;
+      }
+    }
+    return nullptr;
+  }
   static void mouse_button_callback(GLFWwindow *window, int button, int action,
                                     int mods) {
     Factotum *app = (Factotum *)glfwGetWindowUserPointer(window);
@@ -1693,15 +1734,23 @@ protected:
           app->cameraPos, app->getLookingVector(), app->gridSize);
 
       bool canPlace = app->isPlacementValid; // Initial check for occupied slot
+      bool isMiningCoal = false;
 
       if (app->inventoryItem == MINER && canPlace) {
         Mineral *mineralAtPos = app->getMineralAtPosition(newPos);
+        Mineral *getCoalAtPos = app->getCoalAtPosition(newPos);
         if (mineralAtPos != nullptr && !mineralAtPos->isBeingMined) {
           // Can place miner, and it will start mining this mineral
           canPlace = true;
           mineralAtPos->isBeingMined = true;
           std::cout << "Miner placed and started mining at " << newPos.x << ","
                     << newPos.y << "," << newPos.z << std::endl;
+        } else if (getCoalAtPos != nullptr && !getCoalAtPos->isBeingMined) {
+          canPlace = true;
+          getCoalAtPos->isBeingMined = true;
+          std::cout << "Miner placed and started mining at " << newPos.x << ","
+                    << newPos.y << "," << newPos.z << std::endl;
+          isMiningCoal = true;
         } else {
           // Cannot place miner if no mineral or mineral already being mined
           canPlace = false;
@@ -1723,6 +1772,7 @@ protected:
           newPlacedObject.type = app->inventoryItem;
           newPlacedObject.position = newPos;
           newPlacedObject.rotation = app->previewRotation;
+          newPlacedObject.isMiningCoal = isMiningCoal;
           app->placedObjects.push_back(
               std::make_shared<PlacedMiner>(newPlacedObject));
         } break;
@@ -1774,7 +1824,9 @@ protected:
                     << " at position: " << (*it)->position.x << ","
                     << (*it)->position.y << "," << (*it)->position.z
                     << std::endl;
-          app->txt.print(0.0f, -2.0f, "", 100 + (*it)->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          app->txt.print(0.0f, -2.0f, "", 100 + (*it)->id, "CO", false, false,
+                         true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
+                         {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           app->placedObjects.erase(it);
           removed = true;
           app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);

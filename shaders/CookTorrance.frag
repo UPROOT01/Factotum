@@ -73,7 +73,7 @@ void main() {
 	vec3 albedo = texture(albedoMap, fragUV).rgb;
 
 	// get roughness and metallic
-	float roughness = 0.5; // Fixed roughness for ground
+	float roughness = 1.0; // Fixed roughness for ground
 	float metallic = 0.0; // Fixed metallic for ground
 
 	// calculate F0 using the metallic value
@@ -90,7 +90,7 @@ void main() {
 
 	// Direct lighting calculation
 	float NdotL = max(dot(Nmap, L), 0.0);
-	vec3 directLight = (diffuse + specular) * gubo.lightColor.rgb * NdotL * 2.0f;
+	vec3 directLight = (diffuse) * gubo.lightColor.rgb * NdotL * 1.0f;
 
 	// Hemispherical ambient for moon environment
 	vec3 skyColor = vec3(0.2, 0.2, 0.2); // Black sky for moon
@@ -98,7 +98,7 @@ void main() {
 	float ambientFactor = (dot(N, vec3(0.0, 1.0, 0.0)) + 1.0) / 2.0;
 	vec3 ambient = mix(groundColor, skyColor, ambientFactor) * albedo * (1.0 - metallic);
 
-	vec3 finalColor = directLight + ambient;
+	vec3 finalColor = (directLight) * 0.5;
 
 	outColor = vec4(finalColor, 1.0);
 }
