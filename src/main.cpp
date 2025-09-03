@@ -1265,13 +1265,27 @@ protected:
       }
     }
 
-    for (auto &component : minerStructure.components) {
+    for (int j = 0; j < minerStructure.components.size(); j++) {
+      auto &component = minerStructure.components[j];
       for (int i = 0; i < placedMiners.size(); i++) {
+        auto animationMat = glm::mat4(1.0f);
+        float time = glfwGetTime();
+        if (j == 1) {
+          float y_offset = sin(time * 2.0f) * 0.2f;
+          float angle = time * 10.0f;
+          animationMat =
+              glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, y_offset, 0.0f)) *
+              glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+        } else if (j > 0) { 
+          float y_offset = sin(time * 2.0f) * 0.2f;
+          animationMat =
+              glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, y_offset, 0.0f));
+        }
         ubos.mMat[i] =
             glm::translate(glm::mat4(1.f), placedMiners[i]->position) *
             glm::rotate(glm::mat4(1.0f), placedMiners[i]->rotation,
                         glm::vec3(0.0f, 1.0f, 0.0f)) *
-            component.model.Wm;
+            animationMat * component.model.Wm;
         ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
         ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
       }
