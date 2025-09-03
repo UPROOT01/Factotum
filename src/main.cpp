@@ -145,6 +145,7 @@ protected:
   float lastFrame = 0.0f;
 
   struct PlacedObject {
+    int id;
     InventoryItem type;
     glm::vec3 position;
     float rotation;
@@ -161,6 +162,7 @@ protected:
   };
 
   std::vector<std::shared_ptr<PlacedObject>> placedObjects;
+  int nextPlacedObjectId = 0;
 
   struct SpawnedMineral {
     glm::vec3 initialPosition;
@@ -569,6 +571,9 @@ protected:
     txt.print(0.0f, 0.0f, "+", 2, "CO", false, false, true, TAL_CENTER,
               TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
               {0.8f, 0.8f, 0.0f, 1.0f});
+    txt.print(0.0f, 0.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
   }
 
   // Here you create your pipelines and Descriptor Sets!
@@ -1364,6 +1369,23 @@ protected:
       }
     }
 
+    // Add labels for placed objects
+    for (int i = 0; i < placedObjects.size(); i++) {
+      auto& obj = placedObjects[i];
+      if (obj->type == MINER || obj->type == FURNACE) {
+          glm::vec3 pos = obj->position;
+          glm::vec4 clipPos = ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
+          glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+
+          if (ndcPos.z < 1.0f && isPlacing) {
+              std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
+              txt.print(ndcPos.x, ndcPos.y, label, 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          } else {
+              txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          }
+      }
+    }
+
     // display inventory information
     std::stringstream inventory_str;
     inventory_str << "Selected item: ";
@@ -1386,6 +1408,16 @@ protected:
     txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO", false, false, false,
               TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
+
+    // ROCKET LABEL
+    glm::vec3 rocketPos = glm::vec3(SC.TI[3].I[4].Wm[3]);
+    glm::vec4 clipPos = ViewPrj * glm::vec4(rocketPos, 1.0);
+    glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+    if (ndcPos.z < 1.0f) {
+        txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    } else {
+        txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    }
 
     // updates the FPS
     static float elapsedT = 0.0f;
@@ -1669,6 +1701,7 @@ protected:
         switch (app->inventoryItem) {
         case MINER: {
           PlacedMiner newPlacedObject;
+          newPlacedObject.id = app->nextPlacedObjectId++;
           newPlacedObject.type = app->inventoryItem;
           newPlacedObject.position = newPos;
           newPlacedObject.rotation = app->previewRotation;
@@ -1677,6 +1710,7 @@ protected:
         } break;
         case FURNACE: {
           PlacedFurnace newPlacedObject;
+          newPlacedObject.id = app->nextPlacedObjectId++;
           newPlacedObject.type = app->inventoryItem;
           newPlacedObject.position = newPos;
           newPlacedObject.rotation = app->previewRotation;
@@ -1685,6 +1719,7 @@ protected:
         } break;
         case CONVEYOR_BELT: {
           PlacedConveyor newPlacedObject;
+          newPlacedObject.id = app->nextPlacedObjectId++;
           newPlacedObject.type = app->inventoryItem;
           newPlacedObject.position = newPos;
           newPlacedObject.rotation = app->previewRotation;
@@ -1721,6 +1756,7 @@ protected:
                     << " at position: " << (*it)->position.x << ","
                     << (*it)->position.y << "," << (*it)->position.z
                     << std::endl;
+          app->txt.print(0.0f, -2.0f, "", 100 + (*it)->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           app->placedObjects.erase(it);
           removed = true;
           app->submitCommandBuffer("main", 0, populateCommandBufferAccess, app);

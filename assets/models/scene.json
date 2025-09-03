@@ -5,7 +5,7 @@
 		{"id": "mineral_asset", "file": "assets/models/mineral/stone_with_quartz.gltf", "format":"GLTF"},
 		{"id": "mined_mineral_asset", "file": "assets/models/mineral_mined/Asteroid_1b.gltf", "format":"GLTF"},
 		{"id": "metal_ingot_asset", "file": "assets/models/metal_ingot/scene.gltf", "format":"GLTF"},
-		{"id": "rocket_asset", "file": "assets/models/rocket/rocket.gltf", "format":"GLTF"}
+		{"id": "rocket_asset", "file": "assets/models/rocket/Toy_Rocket.gltf", "format":"GLTF"}
 	],
 	"models": [
 		{"id": "skybox", "VD": "VDskybox", "model": "assets/models/SkyBoxCube.obj", "format":"OBJ"},
@@ -13,7 +13,7 @@
 		{"id": "mineral_model", "VD": "VDtan", "model": "stone_with_quartz", "node": "stone_with_quartz", "meshId": 0, "asset": "mineral_asset", "format":"ASSET"},
 		{"id": "mined_mineral_model", "VD": "VDtan", "model": "Asteroid_1b", "node": "Asteroid_1b", "meshId": 0, "asset": "mined_mineral_asset", "format":"ASSET"},
 		{"id": "metal_ingot_model", "VD": "VDtan", "model": "Ingot_LP_Ingot_0", "node": "Ingot_LP_Ingot_0", "meshId": 0, "asset": "metal_ingot_asset", "format":"ASSET"},
-		{"id": "rocket_model", "VD": "VDtan", "model": "rocket", "node": "rocket", "meshId": 0, "asset": "rocket_asset", "format":"ASSET"}
+		{"id": "rocket_model", "VD": "VDtan", "model": "Cylinder.002", "node": "Cylinder.002", "meshId": 0, "asset": "rocket_asset", "format":"ASSET"}
 	],
 	"textures": [
 		{"id": "dcolor",    "texture": "assets/textures/drill/Metal028_4K-JPG_Color.jpg",	   "format": "D"},
@@ -56,7 +56,11 @@
 		{"id": "coal_metallic", "texture": "assets/models/furnace_new/Coal_metallic.png", "format": "D"},
 		{"id": "coal_roughness", "texture": "assets/models/furnace_new/Coal_roughness.png", "format": "D"},
 		{"id": "metal_metallic", "texture": "assets/models/furnace_new/Metal_metallic.png", "format": "D"},
-		{"id": "metal_roughness", "texture": "assets/models/furnace_new/Metal_roughness.png", "format": "D"}
+		{"id": "metal_roughness", "texture": "assets/models/furnace_new/Metal_roughness.png", "format": "D"},
+		{"id": "rocket_basecolor", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_BaseColor.png", "format": "D"},
+		{"id": "rocket_normal", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Normal.png", "format": "D"},
+		{"id": "rocket_metallic", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Metallic.png", "format": "D"},
+		{"id": "rocket_roughness", "texture": "assets/models/rocket/Toy Rocket_Toy Ship_Roughness.png", "format": "D"}
 	],
 	"instances": [
 		{"technique": "CookTorrance", "elements": [
@@ -70,9 +74,9 @@
 		{"technique": "PBR", "elements": [
 			{"id": "mineral1", "model": "mineral_model", "translate": [-10.0, 0.0, -6.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
 			{"id": "mineral2", "model": "mineral_model", "translate": [6.0, 0.0, 12.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
-			{"id": "mineral3", "model": "mineral_model", "translate": [0.0, 0.0, -2.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
+			{"id": "mineral3", "model": "mineral_model", "translate": [0.0, 0.0, -16.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
 			{"id": "mineral4", "model": "mineral_model", "translate": [-8.0, 0.0, 14.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
-			{"id": "rocket", "model": "rocket_model", "translate": [0.0, 0.0, 0.0], "scale": [0.5, 0.5, 0.5], "eulerAngles": [0.0, 0.0, 0.0], "texture": ["ingot_basecolor", "ingot_normal", "ingot_metallic", "ingot_roughness"]}
+			{"id": "rocket", "model": "rocket_model", "translate": [0.0, 4.0, 0.0], "scale": [2.0, 2.0, 2.0], "eulerAngles": [0.0, 0.0, 0.0], "texture": ["rocket_basecolor", "rocket_normal", "rocket_metallic", "rocket_roughness"]}
 		]},
     {"technique": "PBR_coal", "elements":[
     ]}
