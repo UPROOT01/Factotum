@@ -1940,11 +1940,12 @@ protected:
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
       Pos.y += MOVE_SPEED * deltaT;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-      Pos.y = fmax(Pos.y - MOVE_SPEED * deltaT, 2.f);
+      Pos.y = Pos.y - MOVE_SPEED * deltaT;
 
     //    std::cout << "Position: " << Pos.x << ", " << Pos.y << ", " << Pos.z
     //    << "\n";
 
+    Pos.y = fmax(Pos.y, 2.f);
     // Game Logic implementation
     // Current Player Position - statc variable make sure its value remain
     // unchanged in subsequent calls to the procedure
