@@ -165,6 +165,8 @@ protected:
 
   std::vector<std::shared_ptr<PlacedObject>> placedObjects;
   int nextPlacedObjectId = 0;
+  int rocketIronCount = 0;
+  bool isRocketTakingOff = false;
 
   struct SpawnedMineral {
     glm::vec3 initialPosition;
@@ -585,6 +587,9 @@ protected:
               {0.8f, 0.8f, 0.0f, 1.0f});
     txt.print(0.0f, 0.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
               TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
+              {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, 0.0f, "Needed: 25 Iron", 11, "CO", false, false, true, TAL_CENTER,
+              TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
   }
 
@@ -1420,20 +1425,38 @@ protected:
             ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
         glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
 
-        if (ndcPos.z < 1.0f && isPlacing) {
-          std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
-          txt.print(ndcPos.x, ndcPos.y, label, 100 + obj->id, "CO", false,
-                    false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
-                    {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        } else {
-          txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true,
-                    TAL_CENTER, TRH_CENTER, TRV_BOTTOM,
-                    {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-        }
+          if (ndcPos.z < 1.0f && isPlacing) {
+              std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
+              txt.print(ndcPos.x, ndcPos.y + 0.1f, label, 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          } else {
+              txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          }
       }
     }
 
     // display inventory information
+
+    // Add labels for furnace ore and coal
+    for (int i = 0; i < placedObjects.size(); i++) {
+      auto& obj = placedObjects[i];
+      if (obj->type == FURNACE) {
+          auto furnace = std::dynamic_pointer_cast<PlacedFurnace>(obj);
+          glm::vec3 pos = obj->position;
+          glm::vec4 clipPos = ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.5f, 0.0f), 1.0);
+          glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+
+          if (ndcPos.z < 1.0f) {
+              std::stringstream ss_ore, ss_coal;
+              ss_ore << "Ore: " << furnace->ore.size();
+              ss_coal << "Coal: " << furnace->coal.size();
+              txt.print(ndcPos.x, ndcPos.y, ss_ore.str(), 200 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+              txt.print(ndcPos.x, ndcPos.y - 0.05f, ss_coal.str(), 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          } else {
+              txt.print(0.0f, -2.0f, "", 200 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+              txt.print(0.0f, -2.0f, "", 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+          }
+      }
+    }
     std::stringstream inventory_str;
     inventory_str << "Selected item: ";
 
@@ -1456,18 +1479,35 @@ protected:
               TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
 
+    // ENDGAME LOGIC
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        isRocketTakingOff = true; // just for debugging
+    }
+
+    if (rocketIronCount >= 25) {
+        isRocketTakingOff = true;
+    }
+
+    if (isRocketTakingOff) {
+        static float rocketSpeed = 0.0f; // units per second
+        const float rocketAcceleration = 2.5f; // units per second squared
+        rocketSpeed += rocketAcceleration * deltaT;
+
+        SC.TI[3].I[4].Wm = glm::translate(SC.TI[3].I[4].Wm, glm::vec3(0.0f, rocketSpeed * deltaT, 0.0f));
+    }
+
     // ROCKET LABEL
     glm::vec3 rocketPos = glm::vec3(SC.TI[3].I[4].Wm[3]);
     glm::vec4 clipPos = ViewPrj * glm::vec4(rocketPos, 1.0);
     glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
     if (ndcPos.z < 1.0f) {
-      txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true,
-                TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(ndcPos.x, ndcPos.y + 0.15f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        std::stringstream ss;
+        ss << "Needed: " << 25 - rocketIronCount << " Iron";
+        txt.print(ndcPos.x, ndcPos.y + 0.1f, ss.str(), 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
     } else {
-      txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
-                TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
-                {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
     }
 
     // updates the FPS
@@ -1819,6 +1859,9 @@ protected:
                         << removalPos.y << "," << removalPos.z
                         << " is no longer being mined." << std::endl;
             }
+          } else if ((*it)->type == FURNACE) {
+            app->txt.print(0.0f, -2.0f, "", 200 + (*it)->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+            app->txt.print(0.0f, -2.0f, "", 300 + (*it)->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           }
           std::cout << "Removing object of type " << (*it)->type
                     << " at position: " << (*it)->position.x << ","
