@@ -1,6 +1,7 @@
 // This has been adapted from the Vulkan tutorial
 #include <cstdlib>
 #include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <sstream>
@@ -146,8 +147,17 @@ protected:
     InventoryItem type;
     glm::vec3 position;
     float rotation;
+    float lastSpawnTime = 0.0f;
   };
   std::vector<PlacedObject> placedObjects;
+
+  struct SpawnedMineral {
+    glm::vec3 initialPosition;
+    glm::vec3 position;
+    glm::vec3 direction;
+    float spawnTime;
+  };
+  std::vector<SpawnedMineral> spawnedMinerals;
 
   struct Mineral {
     glm::vec3 position;
@@ -819,7 +829,7 @@ protected:
         commandBuffer,
         static_cast<uint32_t>(
             mineralMinedStructure.components[0].model.indices.size()),
-        1, 0, 0, 0);
+        spawnedMinerals.size(), 0, 0, 0);
 
     metalIngotStructure.components[0].model.bind(commandBuffer);
     metalIngotStructure.components[0].standardDescriptorSet.bind(
@@ -1125,16 +1135,18 @@ protected:
       component.standardDescriptorSet.map(currentImage, &ubos, 0);
     }
 
-    for (auto &component : mineralMinedStructure.components) {
-      ubos.mMat[0] =
-          glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 1.0f, 0.0f)) *
+    for (int i = 0; i < spawnedMinerals.size(); i++) {
+      if (i >= 100)
+        break;
+      ubos.mMat[i] =
+          glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
+          glm::scale(glm::vec3(0.4)) *
           mineralMinedStructure.components[0].model.Wm;
-      ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
-      ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
-
-      mineralMinedStructure.components[0].standardDescriptorSet.map(
-          currentImage, &ubos, 0);
+      ubos.mvpMat[i] = ViewPrj * ubos.mMat[i];
+      ubos.nMat[i] = glm::inverse(glm::transpose(ubos.mMat[i]));
     }
+    mineralMinedStructure.components[0].standardDescriptorSet.map(currentImage,
+                                                                  &ubos, 0);
 
     for (auto &component : metalIngotStructure.components) {
       ubos.mMat[0] =
@@ -1146,6 +1158,78 @@ protected:
 
       metalIngotStructure.components[0].standardDescriptorSet.map(currentImage,
                                                                   &ubos, 0);
+    }
+
+    float currentTime = glfwGetTime();
+    for (auto &miner : placedObjects) {
+      if (miner.type == MINER) {
+        if (currentTime - miner.lastSpawnTime > 20.0f) {
+          glm::vec3 centerLeftPos =
+              getMinerCenterLeftBlock(miner.position, miner.rotation);
+
+          bool conveyorFound = false;
+          for (const auto &obj : placedObjects) {
+            if (obj.type == CONVEYOR_BELT && obj.position == centerLeftPos) {
+              conveyorFound = true;
+              break;
+            }
+          }
+
+          if (conveyorFound) {
+            glm::vec2 forward = getForwardVector(miner.rotation);
+            glm::vec3 direction = glm::vec3(-forward.y, 0, forward.x);
+            glm::vec3 spawnPos = centerLeftPos - direction * gridSize;
+
+            SpawnedMineral newMineral;
+            newMineral.initialPosition = spawnPos;
+            newMineral.position = spawnPos;
+            newMineral.direction = direction;
+            newMineral.spawnTime = currentTime;
+
+            spawnedMinerals.push_back(newMineral);
+            miner.lastSpawnTime = currentTime;
+
+            submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+          }
+        }
+      }
+    }
+
+    float mineralSpeed = 0.5f;
+    for (int i = 0; i < spawnedMinerals.size(); i++) {
+      auto &mineral = spawnedMinerals[i];
+      mineral.position =
+          mineral.position + mineral.direction * deltaT * mineralSpeed;
+
+      bool valid = false;
+
+      for (auto &cb : placedConveyors) {
+        // auto forward = getForwardVector(cb.rotation);
+        // auto direction = glm::vec3(-forward.y, 0, forward.x);
+        // std::cout << "Changed direction " << direction.x << ' ' << direction.y
+        //           << ' ' << direction.z << " distance "
+        //           << glm::distance(mineral.position, cb.position)
+        //           << " other distance "
+        //           << glm::distance(mineral.position + mineral.direction,
+        //                            cb.position)
+        //           << "\n";
+        if (glm::distance(mineral.position, cb.position) <= mineralSpeed) {
+          auto forward = getForwardVector(cb.rotation);
+          auto direction = glm::vec3(-forward.y, 0, forward.x);
+          mineral.direction = direction;
+          valid = true;
+          break;
+        } else if (glm::distance(mineral.position + mineral.direction,
+                                 cb.position) <= gridSize) {
+          valid = true;
+          break;
+        }
+      }
+
+      if (!valid) {
+        spawnedMinerals.erase(spawnedMinerals.begin() + i);
+        submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+      }
     }
 
     if (isPlacing) {
@@ -1291,44 +1375,46 @@ protected:
     txt.updateCommandBuffer();
   }
 
-  std::vector<glm::vec3> getMinerOccupiedBlocks(glm::vec3 position,
-                                                float rotationRadians) {
-    std::vector<glm::vec3> occupiedBlocks;
+  glm::vec2 getForwardVector(float rotationRadians) {
     glm::vec2 forward;
-
-    float rotationDegrees = glm::degrees(rotationRadians) - 90.0;
+    float rotationDegrees = glm::degrees(rotationRadians);
     rotationDegrees = fmod(rotationDegrees, 360.0f);
     if (rotationDegrees < 0)
       rotationDegrees += 360.0f;
 
     if (abs(rotationDegrees - 0.0) < 1.0 ||
         abs(rotationDegrees - 360.0) < 1.0) {
-      forward = glm::vec2(0, 1);
-    } else if (abs(rotationDegrees - 90.0) < 1.0) {
       forward = glm::vec2(1, 0);
-    } else if (abs(rotationDegrees - 180.0) < 1.0) {
+    } else if (abs(rotationDegrees - 90.0) < 1.0) {
       forward = glm::vec2(0, -1);
-    } else if (abs(rotationDegrees - 270.0) < 1.0) {
+    } else if (abs(rotationDegrees - 180.0) < 1.0) {
       forward = glm::vec2(-1, 0);
+    } else if (abs(rotationDegrees - 270.0) < 1.0) {
+      forward = glm::vec2(0, 1);
     } else {
-      return occupiedBlocks;
+      forward = glm::vec2(0, 1);
     }
+    return forward;
+  }
 
-    glm::vec2 right = glm::vec2(-forward.y, forward.x);
+  std::vector<glm::vec3> getMinerOccupiedBlocks(glm::vec3 position,
+                                                float rotationRadians) {
+    std::vector<glm::vec3> occupiedBlocks;
+    glm::vec2 forward = getForwardVector(rotationRadians);
 
     // 3-block line
     for (int i = 0; i < 3; ++i) {
       occupiedBlocks.push_back(
-          glm::vec3(position.x + i * forward.x * gridSize, 0,
-                    position.z + i * forward.y * gridSize));
+          glm::vec3(position.x - i * forward.x * gridSize, 0,
+                    position.z - i * forward.y * gridSize));
     }
 
     // 5x5 square
     for (int i = 3; i < 8; ++i) {
       for (int j = -2; j <= 2; ++j) {
         occupiedBlocks.push_back(glm::vec3(
-            position.x + i * forward.x * gridSize + j * forward.y * gridSize, 0,
-            position.z + i * forward.y * gridSize + j * forward.x * gridSize));
+            position.x - i * forward.x * gridSize + j * forward.y * gridSize, 0,
+            position.z - i * forward.y * gridSize + j * forward.x * gridSize));
       }
     }
 
@@ -1338,34 +1424,26 @@ protected:
   std::vector<glm::vec3> getFurnaceOccupiedBlocks(glm::vec3 position,
                                                   float rotationRadians) {
     std::vector<glm::vec3> occupiedBlocks;
-    glm::vec2 forward;
-
-    float rotationDegrees = glm::degrees(rotationRadians) - 90.0;
-
-    rotationDegrees = fmod(rotationDegrees, 360.0f);
-    if (rotationDegrees < 0)
-      rotationDegrees += 360.0f;
-
-    if (abs(rotationDegrees - 0.0) < 1.0 ||
-        abs(rotationDegrees - 360.0) < 1.0) {
-      forward = glm::vec2(0, 1);
-    } else if (abs(rotationDegrees - 90.0) < 1.0) {
-      forward = glm::vec2(1, 0);
-    } else if (abs(rotationDegrees - 180.0) < 1.0) {
-      forward = glm::vec2(0, -1);
-    } else if (abs(rotationDegrees - 270.0) < 1.0) {
-      forward = glm::vec2(-1, 0);
-    } else {
-      return occupiedBlocks;
-    }
+    glm::vec2 forward = getForwardVector(rotationRadians);
 
     occupiedBlocks.push_back(position);
 
     glm::vec2 nextBlockPos =
-        glm::vec2(position.x, position.z) + forward * gridSize;
+        glm::vec2(position.x, position.z) - forward * gridSize;
     occupiedBlocks.push_back(glm::vec3(nextBlockPos.x, 0, nextBlockPos.y));
 
     return occupiedBlocks;
+  }
+
+  glm::vec3 getMinerCenterLeftBlock(glm::vec3 position, float rotationRadians) {
+    glm::vec2 forward = getForwardVector(rotationRadians);
+
+    float x =
+        position.x - 5.0f * forward.x * gridSize - 3.0f * forward.y * gridSize;
+    float z =
+        position.z - 5.0f * forward.y * gridSize + 3.0f * forward.x * gridSize;
+
+    return glm::vec3(x, 0, z);
   }
 
   glm::vec3 getLookingVector() {
