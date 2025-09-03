@@ -927,7 +927,6 @@ protected:
         coal++;
       }
     }
-    std::cout << "current coal comman buffer " << coal << "\n";
     vkCmdDrawIndexed(
         commandBuffer,
         static_cast<uint32_t>(
@@ -1367,7 +1366,6 @@ protected:
       if (!valid) {
         spawnedMinerals.erase(spawnedMinerals.begin() + i);
         submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
-        std::cout << "called here\n";
       }
     }
 
@@ -1400,7 +1398,6 @@ protected:
         cc++;
       }
     }
-    std::cout << "current coal " << cc << "\n";
     coalStructure.components[0].standardDescriptorSet.map(currentImage, &ubos,
                                                           0);
 
