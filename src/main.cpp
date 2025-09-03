@@ -1476,40 +1476,46 @@ protected:
       bool prevState = isPlacementValid;
       isPlacementValid = true;
 
+      if (placementPos.x == 0.0f && placementPos.z == 0.0f) {
+        isPlacementValid = false;
+      }
+
       // Check for existing placed objects
-      for (auto &pos : placedObjects) {
-        std::vector<glm::vec3> positions;
-        switch (pos->type) {
-        case MINER:
-          positions = getMinerOccupiedBlocks(pos->position, pos->rotation);
-          break;
-        case FURNACE:
-          positions = getFurnaceOccupiedBlocks(pos->position, pos->rotation);
-          break;
-        case CONVEYOR_BELT:
-          positions = {pos->position};
-        }
+      if (isPlacementValid) {
+        for (auto &pos : placedObjects) {
+          std::vector<glm::vec3> positions;
+          switch (pos->type) {
+          case MINER:
+            positions = getMinerOccupiedBlocks(pos->position, pos->rotation);
+            break;
+          case FURNACE:
+            positions = getFurnaceOccupiedBlocks(pos->position, pos->rotation);
+            break;
+          case CONVEYOR_BELT:
+            positions = {pos->position};
+          }
 
-        std::vector<glm::vec3> placingPositions;
-        switch (inventoryItem) {
-        case MINER:
-          placingPositions =
-              getMinerOccupiedBlocks(placementPos, previewRotation);
-          break;
-        case FURNACE:
-          placingPositions =
-              getFurnaceOccupiedBlocks(placementPos, previewRotation);
-          break;
-        case CONVEYOR_BELT:
-          placingPositions = {placementPos};
-        }
+          std::vector<glm::vec3> placingPositions;
+          switch (inventoryItem) {
+          case MINER:
+            placingPositions =
+                getMinerOccupiedBlocks(placementPos, previewRotation);
+            break;
+          case FURNACE:
+            placingPositions =
+                getFurnaceOccupiedBlocks(placementPos, previewRotation);
+            break;
+          case CONVEYOR_BELT:
+            placingPositions = {placementPos};
+          }
 
-        for (auto &minPos : positions) {
-          if (isPlacementValid) {
-            for (auto &placPos : placingPositions) {
-              if (minPos == placPos) {
-                isPlacementValid = false;
-                break;
+          for (auto &minPos : positions) {
+            if (isPlacementValid) {
+              for (auto &placPos : placingPositions) {
+                if (minPos == placPos) {
+                  isPlacementValid = false;
+                  break;
+                }
               }
             }
           }
@@ -2097,14 +2103,6 @@ protected:
           newPlacedObject.type = app->inventoryItem;
           newPlacedObject.position = newPos;
           newPlacedObject.rotation = app->previewRotation;
-            newPlacedObject.coal.push_back(20);
-            newPlacedObject.coal.push_back(20);
-            newPlacedObject.coal.push_back(20);
-            newPlacedObject.coal.push_back(20);
-            newPlacedObject.coal.push_back(20);
-            newPlacedObject.ore.push_back(20);
-            newPlacedObject.ore.push_back(20);
-            newPlacedObject.ore.push_back(20);
           app->placedObjects.push_back(
               std::make_shared<PlacedFurnace>(newPlacedObject));
         } break;

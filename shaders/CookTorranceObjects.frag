@@ -99,7 +99,7 @@ void main() {
     vec3 skyColor = vec3(0.2, 0.2, 0.2); // Black sky for moon
     vec3 groundColor = vec3(0.8, 0.8, 0.8); // Bright ground for moon
     float ambientFactor = (dot(N, vec3(0.0, 1.0, 0.0)) + 1.0) / 2.0;
-    vec3 ambient = mix(groundColor, skyColor, ambientFactor) * albedo * (1.0 - metallic);
+    vec3 ambient = mix(groundColor, skyColor, ambientFactor) * albedo * (1.0 - metallic / 1.5);
 
     vec3 finalColor = directLight + ambient;
 
