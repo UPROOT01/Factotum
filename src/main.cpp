@@ -1459,6 +1459,7 @@ protected:
         ubos.mMat[cn] =
             glm::translate(glm::mat4(1.0f), spawnedMinerals[i].position) *
           glm::translate(glm::mat4(1.f), {0.f, 1.f, 0.f})*
+          glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f))*
             glm::scale(glm::vec3(10.f)) *
             metalIngotStructure.components[0].model.Wm;
         ubos.mvpMat[cn] = ViewPrj * ubos.mMat[cn];
