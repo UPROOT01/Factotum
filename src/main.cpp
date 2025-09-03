@@ -347,8 +347,8 @@ protected:
     // The last array, is a vector of pointer to the layouts of the sets that
     // will be used in this pipeline. The first element will be set 0, and so
     // on..
-    Pchar.init(this, &VDchar, "shaders/PosNormUvTanWeights.vert.spv",
-               "shaders/CookTorranceForCharacter.frag.spv",
+    Pchar.init(this, &VDchar, "shaders/SimplePosNormUvTan.vert.spv",
+               "shaders/CookTorrance.frag.spv",
                {&DSLglobal, &DSLlocalChar});
 
     P_Ground.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
@@ -476,7 +476,7 @@ protected:
     }
 
     PRs.resize(5);
-    PRs[0].init("CookTorranceChar",
+    PRs[0].init("CookTorrance",
                 {{&Pchar,
                   {// Pipeline and DSL for the first pass
                    /*DSLglobal*/ {},

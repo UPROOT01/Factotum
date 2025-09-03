@@ -4,14 +4,16 @@
 		{"id": "ut","file": "assets/models/Miner.gltf", "format":"GLTF"},
 		{"id": "mineral_asset", "file": "assets/models/mineral/stone_with_quartz.gltf", "format":"GLTF"},
 		{"id": "mined_mineral_asset", "file": "assets/models/mineral_mined/Asteroid_1b.gltf", "format":"GLTF"},
-		{"id": "metal_ingot_asset", "file": "assets/models/metal_ingot/scene.gltf", "format":"GLTF"}
+		{"id": "metal_ingot_asset", "file": "assets/models/metal_ingot/scene.gltf", "format":"GLTF"},
+		{"id": "rocket_asset", "file": "assets/models/rocket/rocket.gltf", "format":"GLTF"}
 	],
 	"models": [
 		{"id": "skybox", "VD": "VDskybox", "model": "assets/models/SkyBoxCube.obj", "format":"OBJ"},
 		{"id": "ground",  "VD": "VDtan",  "model": "Ground", "node": "Ground", "meshId": 0, "asset": "ct", "format":"ASSET"},
 		{"id": "mineral_model", "VD": "VDtan", "model": "stone_with_quartz", "node": "stone_with_quartz", "meshId": 0, "asset": "mineral_asset", "format":"ASSET"},
 		{"id": "mined_mineral_model", "VD": "VDtan", "model": "Asteroid_1b", "node": "Asteroid_1b", "meshId": 0, "asset": "mined_mineral_asset", "format":"ASSET"},
-		{"id": "metal_ingot_model", "VD": "VDtan", "model": "Ingot_LP_Ingot_0", "node": "Ingot_LP_Ingot_0", "meshId": 0, "asset": "metal_ingot_asset", "format":"ASSET"}
+		{"id": "metal_ingot_model", "VD": "VDtan", "model": "Ingot_LP_Ingot_0", "node": "Ingot_LP_Ingot_0", "meshId": 0, "asset": "metal_ingot_asset", "format":"ASSET"},
+		{"id": "rocket_model", "VD": "VDtan", "model": "rocket", "node": "rocket", "meshId": 0, "asset": "rocket_asset", "format":"ASSET"}
 	],
 	"textures": [
 		{"id": "dcolor",    "texture": "assets/textures/drill/Metal028_4K-JPG_Color.jpg",	   "format": "D"},
@@ -57,7 +59,7 @@
 		{"id": "metal_roughness", "texture": "assets/models/furnace_new/Metal_roughness.png", "format": "D"}
 	],
 	"instances": [
-		{"technique": "CookTorranceChar", "elements": [
+		{"technique": "CookTorrance", "elements": [
 		]}, 
 		{"technique": "CookTorranceGround", "elements": [
 			{"id": "ground",  "model": "ground",   "texture": ["Pavement_Concrete_Marked_Footprints_UV_CM_1", "PavementConcreteNM"]}
@@ -69,7 +71,8 @@
 			{"id": "mineral1", "model": "mineral_model", "translate": [-10.0, 0.0, -6.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
 			{"id": "mineral2", "model": "mineral_model", "translate": [6.0, 0.0, 12.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
 			{"id": "mineral3", "model": "mineral_model", "translate": [0.0, 0.0, -2.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
-			{"id": "mineral4", "model": "mineral_model", "translate": [-8.0, 0.0, 14.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]}
+			{"id": "mineral4", "model": "mineral_model", "translate": [-8.0, 0.0, 14.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
+			{"id": "rocket", "model": "rocket_model", "translate": [0.0, 0.0, 0.0], "scale": [0.5, 0.5, 0.5], "eulerAngles": [0.0, 0.0, 0.0], "texture": ["ingot_basecolor", "ingot_normal", "ingot_metallic", "ingot_roughness"]}
 		]},
     {"technique": "PBR_coal", "elements":[
     ]}
