@@ -2,12 +2,16 @@
 	"assetfiles": [
 		{"id": "ct", "file": "assets/models/MainSceneEnvOnly.gltf", "format":"GLTF"},
 		{"id": "ut","file": "assets/models/Miner.gltf", "format":"GLTF"},
-		{"id": "mineral_asset", "file": "assets/models/mineral/stone_with_quartz.gltf", "format":"GLTF"}
+		{"id": "mineral_asset", "file": "assets/models/mineral/stone_with_quartz.gltf", "format":"GLTF"},
+		{"id": "mined_mineral_asset", "file": "assets/models/mineral_mined/Asteroid_1b.gltf", "format":"GLTF"},
+		{"id": "metal_ingot_asset", "file": "assets/models/metal_ingot/scene.gltf", "format":"GLTF"}
 	],
 	"models": [
 		{"id": "skybox", "VD": "VDskybox", "model": "assets/models/SkyBoxCube.obj", "format":"OBJ"},
 		{"id": "ground",  "VD": "VDtan",  "model": "Ground", "node": "Ground", "meshId": 0, "asset": "ct", "format":"ASSET"},
-		{"id": "mineral_model", "VD": "VDtan", "model": "stone_with_quartz", "node": "stone_with_quartz", "meshId": 0, "asset": "mineral_asset", "format":"ASSET"}
+		{"id": "mineral_model", "VD": "VDtan", "model": "stone_with_quartz", "node": "stone_with_quartz", "meshId": 0, "asset": "mineral_asset", "format":"ASSET"},
+		{"id": "mined_mineral_model", "VD": "VDtan", "model": "Asteroid_1b", "node": "Asteroid_1b", "meshId": 0, "asset": "mined_mineral_asset", "format":"ASSET"},
+		{"id": "metal_ingot_model", "VD": "VDtan", "model": "Ingot_LP_Ingot_0", "node": "Ingot_LP_Ingot_0", "meshId": 0, "asset": "metal_ingot_asset", "format":"ASSET"}
 	],
 	"textures": [
 		{"id": "dcolor",    "texture": "assets/textures/drill/Metal028_4K-JPG_Color.jpg",	   "format": "D"},
@@ -36,7 +40,15 @@
 		{"id": "mineral_normal", "texture": "assets/models/mineral/textures/normal.png", "format": "D"},
 		{"id": "mineral_occlusion", "texture": "assets/models/mineral/textures/occlusion.jpg", "format": "D"},
 		{"id": "mineral_roughness", "texture": "assets/models/mineral/textures/roughness.jpg", "format": "D"},
-		{"id": "mineral_metallic", "texture": "assets/models/mineral/textures/metallic.jpg", "format": "D"}
+		{"id": "mineral_metallic", "texture": "assets/models/mineral/textures/metallic.jpg", "format": "D"},
+		{"id": "mineral_mined_color", "texture": "assets/models/mineral_mined/Asteroid1b _Color_2K.png", "format": "D"},
+		{"id": "mineral_mined_normal", "texture": "assets/models/mineral_mined/Asteroid1b _NormalOpenGL_2K.png", "format": "D"},
+		{"id": "mineral_mined_metallic", "texture": "assets/models/mineral_mined/Asteroid1b _Metallic_2K.png", "format": "D"},
+		{"id": "mineral_mined_roughness", "texture": "assets/models/mineral_mined/Asteroid1b _Roughness_2K.png", "format": "D"},
+		{"id": "ingot_basecolor", "texture": "assets/models/metal_ingot/textures/Ingot_baseColor.png", "format": "D"},
+		{"id": "ingot_normal", "texture": "assets/models/metal_ingot/textures/Ingot_normal.png", "format": "D"},
+		{"id": "ingot_metallic", "texture": "assets/models/metal_ingot/textures/metallic.png", "format": "D"},
+		{"id": "ingot_roughness", "texture": "assets/models/metal_ingot/textures/roughness.png", "format": "D"}
 	],
 	"instances": [
 		{"technique": "CookTorranceChar", "elements": [

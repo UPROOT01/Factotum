@@ -1,10 +1,12 @@
 // This has been adapted from the Vulkan tutorial
 #include <cstdlib>
 #include <glm/fwd.hpp>
+#include <glm/trigonometric.hpp>
 #include <iostream>
 #include <sstream>
 
 #include <json.hpp>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 #include "modules/Starter.hpp"
@@ -101,7 +103,8 @@ protected:
   std::vector<VertexDescriptorRef> VDRs;
   std::vector<TechniqueRef> PRs;
 
-  Structure minerStructure, conveyorStructure, furnaceStructure;
+  Structure minerStructure, conveyorStructure, furnaceStructure,
+      mineralMinedStructure, metalIngotStructure;
   bool isPlacing = false;
   glm::mat4 previewTransform;
   float previewRotation = 0.0f;
@@ -376,14 +379,21 @@ protected:
         this, &VDtan, &assetConveyor, "Cube.003", 0, "Cube.003");
 
     // for (auto &component : conveyorStructure.components) {
-    //   component.model.Wm = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * 
-    //                        glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 1.0f)) * 
-    //                        component.model.Wm;
+    //   component.model.Wm = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+    //   glm::vec3(1.0f, 0.0f, 0.0f)) *
+    //                        glm::scale(glm::mat4(1.0f), glm::vec3(0.1f,
+    //                        0.1f, 1.0f)) * component.model.Wm;
     // }
     //
-    // conveyorStructure.components[0].model.Wm = glm::translate(glm::mat4(1.0f), glm::vec3(-0.9f, 0.0f, -0.1f)) * conveyorStructure.components[0].model.Wm;
-    // conveyorStructure.components[1].model.Wm = glm::translate(glm::mat4(1.0f), glm::vec3(0.9f, 0.0f, -0.1f)) * conveyorStructure.components[1].model.Wm;
-    // conveyorStructure.components[2].model.Wm = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.1f)) * conveyorStructure.components[2].model.Wm;
+    // conveyorStructure.components[0].model.Wm =
+    // glm::translate(glm::mat4(1.0f), glm::vec3(-0.9f, 0.0f, -0.1f)) *
+    // conveyorStructure.components[0].model.Wm;
+    // conveyorStructure.components[1].model.Wm =
+    // glm::translate(glm::mat4(1.0f), glm::vec3(0.9f, 0.0f, -0.1f)) *
+    // conveyorStructure.components[1].model.Wm;
+    // conveyorStructure.components[2].model.Wm =
+    // glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.1f)) *
+    // conveyorStructure.components[2].model.Wm;
 
     furnaceStructure.components.resize(3);
     AssetFile assetFurnace;
@@ -394,6 +404,20 @@ protected:
         this, &VDtan, &assetFurnace, "LP_rail_Metal_0", 0, "LP_rail_Metal_0");
     furnaceStructure.components[2].model.initFromAsset(
         this, &VDtan, &assetFurnace, "LP_rail_Metal_0", 1, "LP_rail_Metal_0");
+
+    mineralMinedStructure.components.resize(1);
+    AssetFile assetMineralMined;
+    assetMineralMined.init("assets/models/mineral_mined/Asteroid_1b.gltf",
+                           GLTF);
+    mineralMinedStructure.components[0].model.initFromAsset(
+        this, &VDtan, &assetMineralMined, "Asteroid_1b", 0, "Asteroid_1b");
+
+    metalIngotStructure.components.resize(1);
+    AssetFile assetMetalIngot;
+    assetMetalIngot.init("assets/models/metal_ingot/scene.gltf", GLTF);
+    metalIngotStructure.components[0].model.initFromAsset(
+        this, &VDtan, &assetMetalIngot, "Ingot_LP_Ingot_0", 0,
+        "Ingot_LP_Ingot_0");
 
     furnaceStructure.components[0].model.Wm =
         glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 1.0f, .0f)) *
@@ -409,6 +433,13 @@ protected:
           glm::rotate(glm::mat4(1.0f), glm::radians(27.0f),
                       glm::vec3(0.0f, 1.0f, 0.0f)) *
           furnaceStructure.components[i].model.Wm;
+    }
+
+    for (auto &component : furnaceStructure.components) {
+      component.model.Wm =
+          glm::scale(glm::vec3(0.7f)) *
+          glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f)) *
+          component.model.Wm;
     }
 
     PRs.resize(5);
@@ -489,14 +520,8 @@ protected:
 
     // read minerals positions
     for (int i = 0; i < 4; i++) {
-      minerals.push_back({
-                glm::vec3(SC.TI[3].I[i+1].Wm[3]),
-                100.0f,
-                false
-      });
+      minerals.push_back({glm::vec3(SC.TI[3].I[i + 1].Wm[3]), 100.0f, false});
     }
-
-    std::cout << SC.TI[3].I[1].Wm[3][0] << " " << SC.TI[3].I[1].Wm[3][1] << " " << SC.TI[3].I[1].Wm[3][2] << std::endl;
 
     // initializes the textual output
     txt.init(this, windowWidth, windowHeight);
@@ -550,13 +575,13 @@ protected:
         {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[1].previewDescriptorSet.init(
-      this, &DSLlocalPBR,
-      {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-        SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+        this, &DSLlocalPBR,
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[1].standardDescriptorSet.init(
-      this, &DSLlocalPBR,
-      {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-        SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+        this, &DSLlocalPBR,
+        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
+         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
     conveyorStructure.components[2].previewDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
@@ -594,6 +619,26 @@ protected:
         {SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(),
          SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler()});
 
+    // init mineral mined structure
+    mineralMinedStructure.components[0].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[27]->getViewAndSampler(), SC.T[28]->getViewAndSampler(),
+         SC.T[29]->getViewAndSampler(), SC.T[30]->getViewAndSampler()});
+    mineralMinedStructure.components[0].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[27]->getViewAndSampler(), SC.T[28]->getViewAndSampler(),
+         SC.T[29]->getViewAndSampler(), SC.T[30]->getViewAndSampler()});
+
+    // init metal ingot structure
+    metalIngotStructure.components[0].previewDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
+         SC.T[33]->getViewAndSampler(), SC.T[34]->getViewAndSampler()});
+    metalIngotStructure.components[0].standardDescriptorSet.init(
+        this, &DSLlocalPBR,
+        {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
+         SC.T[33]->getViewAndSampler(), SC.T[34]->getViewAndSampler()});
+
     DSgrid.init(this, &DSLgrid, {});
     DSglobal.init(this, &DSLglobal, {});
     SC.pipelinesAndDescriptorSetsInit();
@@ -625,6 +670,18 @@ protected:
 
     // furnace cleanup
     for (auto &component : furnaceStructure.components) {
+      component.previewDescriptorSet.cleanup();
+      component.standardDescriptorSet.cleanup();
+    }
+
+    // mineral mined cleanup
+    for (auto &component : mineralMinedStructure.components) {
+      component.previewDescriptorSet.cleanup();
+      component.standardDescriptorSet.cleanup();
+    }
+
+    // metal ingot cleanup
+    for (auto &component : metalIngotStructure.components) {
       component.previewDescriptorSet.cleanup();
       component.standardDescriptorSet.cleanup();
     }
@@ -663,6 +720,14 @@ protected:
     }
 
     for (auto &component : furnaceStructure.components) {
+      component.model.cleanup();
+    }
+
+    for (auto &component : mineralMinedStructure.components) {
+      component.model.cleanup();
+    }
+
+    for (auto &component : metalIngotStructure.components) {
       component.model.cleanup();
     }
 
@@ -746,6 +811,24 @@ protected:
                      static_cast<uint32_t>(
                          furnaceStructure.components[2].model.indices.size()),
                      placedFurnaces.size(), 0, 0, 0);
+
+    mineralMinedStructure.components[0].model.bind(commandBuffer);
+    mineralMinedStructure.components[0].standardDescriptorSet.bind(
+        commandBuffer, P_PBR, 1, currentImage);
+    vkCmdDrawIndexed(
+        commandBuffer,
+        static_cast<uint32_t>(
+            mineralMinedStructure.components[0].model.indices.size()),
+        1, 0, 0, 0);
+
+    metalIngotStructure.components[0].model.bind(commandBuffer);
+    metalIngotStructure.components[0].standardDescriptorSet.bind(
+        commandBuffer, P_PBR, 1, currentImage);
+    vkCmdDrawIndexed(
+        commandBuffer,
+        static_cast<uint32_t>(
+            metalIngotStructure.components[0].model.indices.size()),
+        1, 0, 0, 0);
 
     if (isPlacing) {
       Structure *selectedStructure = &minerStructure;
@@ -1042,6 +1125,29 @@ protected:
       component.standardDescriptorSet.map(currentImage, &ubos, 0);
     }
 
+    for (auto &component : mineralMinedStructure.components) {
+      ubos.mMat[0] =
+          glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 1.0f, 0.0f)) *
+          mineralMinedStructure.components[0].model.Wm;
+      ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
+      ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
+
+      mineralMinedStructure.components[0].standardDescriptorSet.map(
+          currentImage, &ubos, 0);
+    }
+
+    for (auto &component : metalIngotStructure.components) {
+      ubos.mMat[0] =
+          glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 0.0f, 0.0f)) *
+          glm::scale(glm::vec3(8.f)) *
+          metalIngotStructure.components[0].model.Wm;
+      ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
+      ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
+
+      metalIngotStructure.components[0].standardDescriptorSet.map(currentImage,
+                                                                  &ubos, 0);
+    }
+
     if (isPlacing) {
       glm::vec3 placementPos = calculateGroundPlacementPosition(
           cameraPos, getLookingVector(), gridSize);
@@ -1051,9 +1157,41 @@ protected:
 
       // Check for existing placed objects
       for (auto &pos : placedObjects) {
-        if (pos.position == placementPos) {
-          isPlacementValid = false;
+        std::vector<glm::vec3> positions;
+        switch (pos.type) {
+        case MINER:
+          positions = getMinerOccupiedBlocks(pos.position, pos.rotation);
           break;
+        case FURNACE:
+          positions = getFurnaceOccupiedBlocks(pos.position, pos.rotation);
+          break;
+        case CONVEYOR_BELT:
+          positions = {pos.position};
+        }
+
+        std::vector<glm::vec3> placingPositions;
+        switch (inventoryItem) {
+        case MINER:
+          placingPositions =
+              getMinerOccupiedBlocks(placementPos, previewRotation);
+          break;
+        case FURNACE:
+          placingPositions =
+              getFurnaceOccupiedBlocks(placementPos, previewRotation);
+          break;
+        case CONVEYOR_BELT:
+          placingPositions = {placementPos};
+        }
+
+        for (auto &minPos : positions) {
+          if (isPlacementValid) {
+            for (auto &placPos : placingPositions) {
+              if (minPos == placPos) {
+                isPlacementValid = false;
+                break;
+              }
+            }
+          }
         }
       }
 
@@ -1151,6 +1289,83 @@ protected:
     }
 
     txt.updateCommandBuffer();
+  }
+
+  std::vector<glm::vec3> getMinerOccupiedBlocks(glm::vec3 position,
+                                                float rotationRadians) {
+    std::vector<glm::vec3> occupiedBlocks;
+    glm::vec2 forward;
+
+    float rotationDegrees = glm::degrees(rotationRadians) - 90.0;
+    rotationDegrees = fmod(rotationDegrees, 360.0f);
+    if (rotationDegrees < 0)
+      rotationDegrees += 360.0f;
+
+    if (abs(rotationDegrees - 0.0) < 1.0 ||
+        abs(rotationDegrees - 360.0) < 1.0) {
+      forward = glm::vec2(0, 1);
+    } else if (abs(rotationDegrees - 90.0) < 1.0) {
+      forward = glm::vec2(1, 0);
+    } else if (abs(rotationDegrees - 180.0) < 1.0) {
+      forward = glm::vec2(0, -1);
+    } else if (abs(rotationDegrees - 270.0) < 1.0) {
+      forward = glm::vec2(-1, 0);
+    } else {
+      return occupiedBlocks;
+    }
+
+    glm::vec2 right = glm::vec2(-forward.y, forward.x);
+
+    // 3-block line
+    for (int i = 0; i < 3; ++i) {
+      occupiedBlocks.push_back(
+          glm::vec3(position.x + i * forward.x * gridSize, 0,
+                    position.z + i * forward.y * gridSize));
+    }
+
+    // 5x5 square
+    for (int i = 3; i < 8; ++i) {
+      for (int j = -2; j <= 2; ++j) {
+        occupiedBlocks.push_back(glm::vec3(
+            position.x + i * forward.x * gridSize + j * forward.y * gridSize, 0,
+            position.z + i * forward.y * gridSize + j * forward.x * gridSize));
+      }
+    }
+
+    return occupiedBlocks;
+  }
+
+  std::vector<glm::vec3> getFurnaceOccupiedBlocks(glm::vec3 position,
+                                                  float rotationRadians) {
+    std::vector<glm::vec3> occupiedBlocks;
+    glm::vec2 forward;
+
+    float rotationDegrees = glm::degrees(rotationRadians) - 90.0;
+
+    rotationDegrees = fmod(rotationDegrees, 360.0f);
+    if (rotationDegrees < 0)
+      rotationDegrees += 360.0f;
+
+    if (abs(rotationDegrees - 0.0) < 1.0 ||
+        abs(rotationDegrees - 360.0) < 1.0) {
+      forward = glm::vec2(0, 1);
+    } else if (abs(rotationDegrees - 90.0) < 1.0) {
+      forward = glm::vec2(1, 0);
+    } else if (abs(rotationDegrees - 180.0) < 1.0) {
+      forward = glm::vec2(0, -1);
+    } else if (abs(rotationDegrees - 270.0) < 1.0) {
+      forward = glm::vec2(-1, 0);
+    } else {
+      return occupiedBlocks;
+    }
+
+    occupiedBlocks.push_back(position);
+
+    glm::vec2 nextBlockPos =
+        glm::vec2(position.x, position.z) + forward * gridSize;
+    occupiedBlocks.push_back(glm::vec3(nextBlockPos.x, 0, nextBlockPos.y));
+
+    return occupiedBlocks;
   }
 
   glm::vec3 getLookingVector() {
@@ -1313,7 +1528,7 @@ protected:
 
       bool canPlace = app->isPlacementValid; // Initial check for occupied slot
 
-      if (app->inventoryItem == MINER) {
+      if (app->inventoryItem == MINER && canPlace) {
         Mineral *mineralAtPos = app->getMineralAtPosition(newPos);
         if (mineralAtPos != nullptr && !mineralAtPos->isBeingMined) {
           // Can place miner, and it will start mining this mineral
@@ -1325,9 +1540,11 @@ protected:
           // Cannot place miner if no mineral or mineral already being mined
           canPlace = false;
           if (mineralAtPos == nullptr) {
-            std::cout << "Cannot place miner: no mineral at this position." << std::endl;
+            std::cout << "Cannot place miner: no mineral at this position."
+                      << std::endl;
           } else {
-            std::cout << "Cannot place miner: mineral already being mined." << std::endl;
+            std::cout << "Cannot place miner: mineral already being mined."
+                      << std::endl;
           }
         }
       }
@@ -1346,7 +1563,8 @@ protected:
                   << ", rotation: " << glm::degrees(newPlacedObject.rotation)
                   << " degrees\n";
       } else {
-        std::cout << "Cannot place object here: position is invalid." << std::endl;
+        std::cout << "Cannot place object here: position is invalid."
+                  << std::endl;
       }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS &&
                app->isPlacing) {
