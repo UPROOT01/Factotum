@@ -1158,7 +1158,7 @@ protected:
     UniformBufferObjectSimp ubos{};
 
     // ground pipeline
-    ubos.mMat[0] = SC.TI[1].I[0].Wm;
+    ubos.mMat[0] = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * SC.TI[1].I[0].Wm;
     ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
     ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
     SC.TI[1].I[0].DS[0][0]->map(currentImage, &gubo, 0); // Set 0
@@ -1511,7 +1511,7 @@ protected:
     if (!isRocketTakingOff) {
     for (int i = 0; i < placedObjects.size(); i++) {
       auto &obj = placedObjects[i];
-      if (obj->type == MINER || obj->type == FURNACE) {
+      if (obj->type == FURNACE) {
         glm::vec3 pos = obj->position;
         glm::vec4 clipPos =
             ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.0f, 0.0f), 1.0);
@@ -1519,7 +1519,7 @@ protected:
 
           if (ndcPos.z < 1.0f && isPlacing) {
               std::string label = (obj->type == MINER) ? "Miner" : "Furnace";
-              txt.print(ndcPos.x, ndcPos.y + 0.1f, label, 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+              txt.print(ndcPos.x, ndcPos.y, "Miner", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           } else {
               txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           }
@@ -1539,13 +1539,15 @@ protected:
           glm::vec4 clipPos = ViewPrj * glm::vec4(pos + glm::vec3(0.0f, 1.5f, 0.0f), 1.0);
           glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
 
-          if (ndcPos.z < 1.0f) {
+          if (ndcPos.z < 1.0f && isPlacing) {
               std::stringstream ss_ore, ss_coal;
               ss_ore << "Ore: " << furnace->ore.size();
               ss_coal << "Coal: " << furnace->coal.size();
+              txt.print(ndcPos.x, ndcPos.y - 0.1f, "Furnace", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
               txt.print(ndcPos.x, ndcPos.y, ss_ore.str(), 200 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
-              txt.print(ndcPos.x, ndcPos.y - 0.05f, ss_coal.str(), 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+              txt.print(ndcPos.x, ndcPos.y, ss_coal.str(), 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           } else {
+              txt.print(0.0f, -2.0f, "", 100 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
               txt.print(0.0f, -2.0f, "", 200 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
               txt.print(0.0f, -2.0f, "", 300 + obj->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
           }
@@ -1610,7 +1612,7 @@ protected:
     glm::vec4 clipPos = ViewPrj * glm::vec4(rocketPos, 1.0);
     glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
     if (ndcPos.z < 1.0f) {
-        txt.print(ndcPos.x, ndcPos.y + 0.15f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(ndcPos.x, ndcPos.y, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
         std::stringstream ss;
         ss << "Needed: " << 25 - rocketIronCount << " Iron";
         txt.print(ndcPos.x, ndcPos.y + 0.1f, ss.str(), 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
