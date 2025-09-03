@@ -87,7 +87,7 @@ protected:
 
   // Descriptor Layouts [what will be passed to the shaders]
   DescriptorSetLayout DSLlocalChar, DSLlocalSimp, DSLlocalPBR, DSLglobal,
-      DSLskyBox, DSLgrid, DSLlocalPBRCoal;
+      DSLskyBox, DSLgrid, DSLlocalPBRCoal, DSLwireframe;
 
   // Vertex formants, Pipelines [Shader couples] and Render passes
   VertexDescriptor VDchar;
@@ -96,7 +96,7 @@ protected:
   VertexDescriptor VDtan;
   VertexDescriptor VDgrid;
   RenderPass RP;
-  Pipeline Pchar, PsimpObj, PskyBox, P_PBR, P_PBRCoal, Pwireframe, Pgrid;
+  Pipeline P_Ground, Pchar, PskyBox, P_PBR, P_PBRCoal, Pwireframe, Pgrid;
   //*DBG*/Pipeline PDebug;
 
   // Models, textures and Descriptors (values assigned to the uniforms)
@@ -268,11 +268,17 @@ protected:
                {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},
                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}});
+                VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},
+               {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1}});
 
     DSLgrid.init(this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                          VK_SHADER_STAGE_ALL_GRAPHICS,
                          sizeof(GridUniformBufferObject), 1}});
+
+    DSLwireframe.init(
+        this, {{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObjectSimp), 1}});
 
     VDchar.init(
         this, {{0, sizeof(VertexChar), VK_VERTEX_INPUT_RATE_VERTEX}},
@@ -334,8 +340,8 @@ protected:
                "shaders/CookTorranceForCharacter.frag.spv",
                {&DSLglobal, &DSLlocalChar});
 
-    PsimpObj.init(this, &VDsimp, "shaders/SimplePosNormUV.vert.spv",
-                  "shaders/CookTorrance.frag.spv", {&DSLglobal, &DSLlocalSimp});
+    P_Ground.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
+                  "shaders/CookTorranceGround.frag.spv", {&DSLglobal, &DSLlocalSimp});
 
     PskyBox.init(this, &VDskyBox, "shaders/SkyBoxShader.vert.spv",
                  "shaders/SkyBoxShader.frag.spv", {&DSLskyBox});
@@ -344,10 +350,10 @@ protected:
     PskyBox.setPolygonMode(VK_POLYGON_MODE_FILL);
 
     P_PBR.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-               "shaders/PBR.frag.spv", {&DSLglobal, &DSLlocalPBR});
+               "shaders/CookTorranceObjects.frag.spv", {&DSLglobal, &DSLlocalPBR});
 
     P_PBRCoal.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-                   "shaders/PBR_coal.frag.spv", {&DSLglobal, &DSLlocalPBRCoal});
+                   "shaders/CookTorranceEmissive.frag.spv", {&DSLglobal, &DSLlocalPBRCoal});
 
     VkPushConstantRange pushConstRange{};
     pushConstRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -355,7 +361,7 @@ protected:
     pushConstRange.size = sizeof(glm::vec4);
 
     Pwireframe.init(this, &VDtan, "shaders/SimplePosNormUvTan.vert.spv",
-                    "shaders/OnlyCyan.frag.spv", {&DSLglobal, &DSLlocalPBR},
+                    "shaders/OnlyCyan.frag.spv", {&DSLglobal, &DSLwireframe},
                     {pushConstRange});
     Pwireframe.setPolygonMode(VK_POLYGON_MODE_LINE);
     // I want to be able to see the wireframe even from behind
@@ -462,17 +468,17 @@ protected:
                                             // the json file
                    }}}},
                 /*TotalNtextures*/ 1, &VDchar);
-    PRs[1].init("CookTorranceNoiseSimp",
-                {{&PsimpObj,
+    PRs[1].init("CookTorranceGround",
+                {{&P_Ground,
                   {// Pipeline and DSL for the first pass
                    /*DSLglobal*/ {},
-                   /*DSLlocalSimp*/ {
+                   /*DSLlocalPBR*/ {
                        /*t0*/ {true, 0, {}}, // index 0 of the "texture" field
                                              // in the json file
-                       /*t1*/ {true, 1, {}} // index 1 of the "texture" field in
-                                            // the json file
+                       /*t1*/ {true, 1, {}}, // index 1 of the "texture" field
+                                             // in the json file
                    }}}},
-                /*TotalNtextures*/ 2, &VDsimp);
+                /*TotalNtextures*/ 2, &VDtan);
     PRs[2].init("SkyBox",
                 {{&PskyBox,
                   {// Pipeline and DSL for the first pass
@@ -530,7 +536,7 @@ protected:
 
     // read minerals positions
     for (int i = 0; i < 4; i++) {
-      minerals.push_back({glm::vec3(SC.TI[3].I[i + 1].Wm[3]), 100.0f, false});
+      minerals.push_back({glm::vec3(SC.TI[3].I[i].Wm[3]), 100.0f, false});
     }
 
     // initializes the textual output
@@ -556,7 +562,7 @@ protected:
     // This creates a new pipeline (with the current surface), using its shaders
     // for the provided render pass
     Pchar.create(&RP);
-    PsimpObj.create(&RP);
+    P_Ground.create(&RP);
     PskyBox.create(&RP);
     P_PBR.create(&RP);
     Pwireframe.create(&RP);
@@ -564,10 +570,7 @@ protected:
     P_PBRCoal.create(&RP);
 
     for (auto &component : minerStructure.components) {
-      component.previewDescriptorSet.init(
-          this, &DSLlocalPBR,
-          {SC.T[0]->getViewAndSampler(), SC.T[1]->getViewAndSampler(),
-           SC.T[3]->getViewAndSampler(), SC.T[2]->getViewAndSampler()});
+      component.previewDescriptorSet.init(this, &DSLwireframe, {});
 
       component.standardDescriptorSet.init(
           this, &DSLlocalPBR,
@@ -576,74 +579,50 @@ protected:
     }
 
     // init conveyor components
-    conveyorStructure.components[0].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
     conveyorStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[1].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
-         SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
+    conveyorStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe,{});
     conveyorStructure.components[1].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler(),
          SC.T[11]->getViewAndSampler(), SC.T[11]->getViewAndSampler()});
-    conveyorStructure.components[2].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
-         SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
+    conveyorStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe,{});
     conveyorStructure.components[2].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler(),
          SC.T[10]->getViewAndSampler(), SC.T[10]->getViewAndSampler()});
 
     // init furnace components
-    furnaceStructure.components[0].previewDescriptorSet.init(
-        this, &DSLlocalPBRCoal,
-        {SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(),
-         SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler()});
+    furnaceStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
     furnaceStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBRCoal,
         {SC.T[15]->getViewAndSampler(), SC.T[18]->getViewAndSampler(),
-         SC.T[16]->getViewAndSampler(), SC.T[17]->getViewAndSampler()});
+         SC.T[37]->getViewAndSampler(), SC.T[38]->getViewAndSampler(), SC.T[17]->getViewAndSampler()});
 
-    furnaceStructure.components[1].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(),
-         SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler()});
+    furnaceStructure.components[1].previewDescriptorSet.init(this, &DSLwireframe,{});
     furnaceStructure.components[1].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[19]->getViewAndSampler(), SC.T[21]->getViewAndSampler(),
-         SC.T[20]->getViewAndSampler(), SC.T[20]->getViewAndSampler()});
+         SC.T[39]->getViewAndSampler(), SC.T[40]->getViewAndSampler()});
 
-    furnaceStructure.components[2].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(),
-         SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler()});
+    furnaceStructure.components[2].previewDescriptorSet.init(this, &DSLwireframe,{});
     furnaceStructure.components[2].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[12]->getViewAndSampler(), SC.T[13]->getViewAndSampler(),
-         SC.T[14]->getViewAndSampler(), SC.T[14]->getViewAndSampler()});
+         SC.T[35]->getViewAndSampler(), SC.T[36]->getViewAndSampler()});
 
     // init mineral mined structure
-    mineralMinedStructure.components[0].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[27]->getViewAndSampler(), SC.T[28]->getViewAndSampler(),
-         SC.T[29]->getViewAndSampler(), SC.T[30]->getViewAndSampler()});
+    mineralMinedStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
     mineralMinedStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[27]->getViewAndSampler(), SC.T[28]->getViewAndSampler(),
          SC.T[29]->getViewAndSampler(), SC.T[30]->getViewAndSampler()});
 
     // init metal ingot structure
-    metalIngotStructure.components[0].previewDescriptorSet.init(
-        this, &DSLlocalPBR,
-        {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
-         SC.T[33]->getViewAndSampler(), SC.T[34]->getViewAndSampler()});
+    metalIngotStructure.components[0].previewDescriptorSet.init(this, &DSLwireframe,{});
     metalIngotStructure.components[0].standardDescriptorSet.init(
         this, &DSLlocalPBR,
         {SC.T[31]->getViewAndSampler(), SC.T[32]->getViewAndSampler(),
@@ -658,7 +637,7 @@ protected:
   // Here you destroy your pipelines and Descriptor Sets!
   void pipelinesAndDescriptorSetsCleanup() {
     Pchar.cleanup();
-    PsimpObj.cleanup();
+    P_Ground.cleanup();
     PskyBox.cleanup();
     P_PBR.cleanup();
     Pwireframe.cleanup();
@@ -713,9 +692,10 @@ protected:
     DSLskyBox.cleanup();
     DSLglobal.cleanup();
     DSLgrid.cleanup();
+    DSLwireframe.cleanup();
 
     Pchar.destroy();
-    PsimpObj.destroy();
+    P_Ground.destroy();
     PskyBox.destroy();
     P_PBR.destroy();
     Pwireframe.destroy();
@@ -798,6 +778,8 @@ protected:
                        placedConveyors.size(), 0, 0, 0);
     }
 
+    P_PBRCoal.bind(commandBuffer);
+    DSglobal.bind(commandBuffer, P_PBRCoal, 0, currentImage);
     furnaceStructure.components[0].model.bind(commandBuffer);
     furnaceStructure.components[0].standardDescriptorSet.bind(
         commandBuffer, P_PBRCoal, 1, currentImage);
@@ -806,6 +788,8 @@ protected:
                          furnaceStructure.components[0].model.indices.size()),
                      placedFurnaces.size(), 0, 0, 0);
 
+    P_PBR.bind(commandBuffer);
+    DSglobal.bind(commandBuffer, P_PBR, 0, currentImage);
     furnaceStructure.components[1].model.bind(commandBuffer);
     furnaceStructure.components[1].standardDescriptorSet.bind(
         commandBuffer, P_PBR, 1, currentImage);
@@ -1045,6 +1029,13 @@ protected:
 
     int instanceId;
     UniformBufferObjectSimp ubos{};
+
+    // ground pipeline
+    ubos.mMat[0] = SC.TI[1].I[0].Wm;
+    ubos.mvpMat[0] = ViewPrj * ubos.mMat[0];
+    ubos.nMat[0] = glm::inverse(glm::transpose(ubos.mMat[0]));
+    SC.TI[1].I[0].DS[0][0]->map(currentImage, &gubo, 0); // Set 0
+    SC.TI[1].I[0].DS[0][1]->map(currentImage, &ubos, 0); // Set 1
 
     // skybox pipeline
     skyBoxUniformBufferObject sbubo{};

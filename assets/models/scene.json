@@ -48,18 +48,24 @@
 		{"id": "ingot_basecolor", "texture": "assets/models/metal_ingot/textures/Ingot_baseColor.png", "format": "D"},
 		{"id": "ingot_normal", "texture": "assets/models/metal_ingot/textures/Ingot_normal.png", "format": "D"},
 		{"id": "ingot_metallic", "texture": "assets/models/metal_ingot/textures/metallic.png", "format": "D"},
-		{"id": "ingot_roughness", "texture": "assets/models/metal_ingot/textures/roughness.png", "format": "D"}
+		{"id": "ingot_roughness", "texture": "assets/models/metal_ingot/textures/roughness.png", "format": "D"},
+		{"id": "furnace_metallic", "texture": "assets/models/furnace_new/Furnace_metallic.png", "format": "D"},
+		{"id": "furnace_roughness", "texture": "assets/models/furnace_new/Furnace_roughness.png", "format": "D"},
+		{"id": "coal_metallic", "texture": "assets/models/furnace_new/Coal_metallic.png", "format": "D"},
+		{"id": "coal_roughness", "texture": "assets/models/furnace_new/Coal_roughness.png", "format": "D"},
+		{"id": "metal_metallic", "texture": "assets/models/furnace_new/Metal_metallic.png", "format": "D"},
+		{"id": "metal_roughness", "texture": "assets/models/furnace_new/Metal_roughness.png", "format": "D"}
 	],
 	"instances": [
 		{"technique": "CookTorranceChar", "elements": [
 		]}, 
-		{"technique": "CookTorranceNoiseSimp", "elements": [
+		{"technique": "CookTorranceGround", "elements": [
+			{"id": "ground",  "model": "ground",   "texture": ["Pavement_Concrete_Marked_Footprints_UV_CM_1", "PavementConcreteNM"]}
 		]}, 
 		{"technique": "SkyBox", "elements": [
 			{"id": "skybox",  "model": "skybox",   "texture": ["skybox"]}
 		]}, 
 		{"technique": "PBR", "elements": [
-			{"id": "ground",  "model": "ground",   "texture": ["Pavement_Concrete_Marked_Footprints_UV_CM_1", "PavementConcreteNM", "scbmt", "Untitled"]},
 			{"id": "mineral1", "model": "mineral_model", "translate": [-10.0, 0.0, -6.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
 			{"id": "mineral2", "model": "mineral_model", "translate": [6.0, 0.0, 12.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
 			{"id": "mineral3", "model": "mineral_model", "translate": [0.0, 0.0, -2.0], "scale": [10.0, 10.0, 10.0], "eulerAngles": [-90.0, 0.0, 0.0], "texture": ["mineral_basecolor", "mineral_normal", "mineral_metallic", "mineral_roughness"]},
