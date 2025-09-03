@@ -6,6 +6,7 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <memory>
+#include <iomanip>
 #include <sstream>
 
 #include <json.hpp>
@@ -167,6 +168,11 @@ protected:
   int nextPlacedObjectId = 0;
   int rocketIronCount = 0;
   bool isRocketTakingOff = false;
+  bool isGameOver = false;
+  bool isShowingWinScreen = false;
+  float takeoffTime = 0.0f;
+  float gameStartTime = 0.0f;
+  float finalGameTime = 0.0f;
 
   struct SpawnedMineral {
     glm::vec3 initialPosition;
@@ -585,6 +591,13 @@ protected:
     txt.print(0.0f, 0.0f, "+", 2, "CO", false, false, true, TAL_CENTER,
               TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f},
               {0.8f, 0.8f, 0.0f, 1.0f});
+
+    // Win screen text
+    txt.print(0.0f, -2.0f, "You Won!", 1000, "CO", true, false, false, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "in xx:xx minutes", 1001, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "Press ESC to exit", 1002, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+
+    gameStartTime = glfwGetTime();
     txt.print(0.0f, 0.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER,
               TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
@@ -806,6 +819,11 @@ protected:
   }
   // This is the real place where the Command Buffer is written
   void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+    if (isShowingWinScreen) {
+        RP.begin(commandBuffer, currentImage);
+        RP.end(commandBuffer);
+        return;
+    }
 
     // begin standard pass
     RP.begin(commandBuffer, currentImage);
@@ -1416,7 +1434,14 @@ protected:
       }
     }
 
+    if (isRocketTakingOff) {
+        txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
+    } else {
+        txt.print(0.0f, 0.0f, "+", 2, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
+    }
+
     // Add labels for placed objects
+    if (!isRocketTakingOff) {
     for (int i = 0; i < placedObjects.size(); i++) {
       auto &obj = placedObjects[i];
       if (obj->type == MINER || obj->type == FURNACE) {
@@ -1433,10 +1458,12 @@ protected:
           }
       }
     }
+    }
 
     // display inventory information
 
     // Add labels for furnace ore and coal
+    if (!isRocketTakingOff) {
     for (int i = 0; i < placedObjects.size(); i++) {
       auto& obj = placedObjects[i];
       if (obj->type == FURNACE) {
@@ -1457,7 +1484,9 @@ protected:
           }
       }
     }
+    }
     std::stringstream inventory_str;
+    if (!isRocketTakingOff) {
     inventory_str << "Selected item: ";
 
     switch (inventoryItem) {
@@ -1478,6 +1507,7 @@ protected:
     txt.print(-1.0f, -1.0f, inventory_str.str(), 3, "CO", false, false, false,
               TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f},
               {0.0f, 0.0f, 0.0f, 1.0f});
+    }
 
     // ENDGAME LOGIC
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
@@ -1489,11 +1519,23 @@ protected:
     }
 
     if (isRocketTakingOff) {
+        if (!isGameOver) {
+            isGameOver = true;
+            takeoffTime = glfwGetTime();
+            hideInGameUI();
+        }
         static float rocketSpeed = 0.0f; // units per second
         const float rocketAcceleration = 2.5f; // units per second squared
         rocketSpeed += rocketAcceleration * deltaT;
 
         SC.TI[3].I[4].Wm = glm::translate(SC.TI[3].I[4].Wm, glm::vec3(0.0f, rocketSpeed * deltaT, 0.0f));
+    }
+
+    if (isGameOver && !isShowingWinScreen && (glfwGetTime() - takeoffTime > 5.0f)) {
+        isShowingWinScreen = true;
+        finalGameTime = glfwGetTime() - gameStartTime;
+        RP.properties[0].clearValue = {0.5f, 0.8f, 1.0f, 1.0f};
+        submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
     }
 
     // ROCKET LABEL
@@ -1511,23 +1553,38 @@ protected:
     }
 
     // updates the FPS
-    static float elapsedT = 0.0f;
-    static int countedFrames = 0;
+    if (!isRocketTakingOff) {
+      static float elapsedT = 0.0f;
+      static int countedFrames = 0;
 
-    countedFrames++;
-    elapsedT += deltaT;
-    if (elapsedT > 1.0f) {
-      float Fps = (float)countedFrames / elapsedT;
+      countedFrames++;
+      elapsedT += deltaT;
+      if (elapsedT > 1.0f) {
+        float Fps = (float)countedFrames / elapsedT;
 
-      std::ostringstream oss;
-      oss << "FPS: " << Fps << "\n";
+        std::ostringstream oss;
+        oss << "FPS: " << Fps << "\n";
 
-      txt.print(1.0f, 1.0f, oss.str(), 1, "CO", false, false, true, TAL_RIGHT,
-                TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f},
-                {0.8f, 0.8f, 0.0f, 1.0f});
+        txt.print(1.0f, 1.0f, oss.str(), 1, "CO", false, false, true, TAL_RIGHT,
+                  TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f},
+                  {0.8f, 0.8f, 0.0f, 1.0f});
 
-      elapsedT = 0.0f;
-      countedFrames = 0;
+        elapsedT = 0.0f;
+        countedFrames = 0;
+      }
+    }
+
+
+    if (isShowingWinScreen) {
+        int minutes = finalGameTime / 60;
+        int seconds = (int)finalGameTime % 60;
+        std::stringstream ss;
+        ss << "in " << std::setfill('0') << std::setw(2) << minutes << ":" << std::setfill('0') << std::setw(2) << seconds << " minutes";
+        
+        txt.print(0.0f, 0.2f, "You Won!", 1000, "CO", true, false, false, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, 0.0f, ss.str(), 1001, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, -0.8f, "Press ESC to exit", 1002, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        
     }
 
     txt.updateCommandBuffer();
@@ -1882,6 +1939,19 @@ protected:
                   << std::endl;
       }
     }
+  }
+
+  void hideInGameUI() {
+    txt.print(0.0f, -2.0f, "Rocket", 10, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "", 11, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    for (int i = 0; i < placedObjects.size(); i++) {
+        txt.print(0.0f, -2.0f, "", 100 + placedObjects[i]->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, -2.0f, "", 200 + placedObjects[i]->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_BOTTOM, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+        txt.print(0.0f, -2.0f, "", 300 + placedObjects[i]->id, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    }
+    txt.print(0.0f, -2.0f, "", 3, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "", 1, "CO", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
+    txt.print(0.0f, -2.0f, "+", 2, "CO", false, false, true, TAL_CENTER, TRH_CENTER, TRV_MIDDLE, {1.0f, 0.0f, 0.0f, 1.0f}, {0.8f, 0.8f, 0.0f, 1.0f});
   }
 };
 
